@@ -16,25 +16,25 @@ const router = createRouter({
       redirect: '/login',
     },
     {
-      path: '/backoffice',
+      path: '/',
       name: 'backoffice',
       component: BackofficeView,
     },
     {
+      path: '/backoffice',
+      redirect: '/',
+    },
+    {
       path: '/dashboard',
-      redirect: '/backoffice',
+      redirect: '/',
     },
     {
       path: '/deploy',
-      redirect: '/backoffice?tab=deploy',
-    },
-    {
-      path: '/',
-      redirect: '/backoffice',
+      redirect: '/?tab=deploy',
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/backoffice',
+      redirect: '/',
     },
   ],
 })

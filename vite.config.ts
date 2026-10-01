@@ -5,6 +5,7 @@ import vue from '@vitejs/plugin-vue'
 const firebaseShim = fileURLToPath(new URL('./src/compat/firebase.ts', import.meta.url))
 
 export default defineConfig({
+  base: '/backoffice/',
   plugins: [vue()],
   resolve: {
     alias: [
