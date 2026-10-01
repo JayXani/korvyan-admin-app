@@ -39,13 +39,6 @@
       </div>
     </div>
 
-    <!-- Banner de Status SSH / VPS -->
-    <div v-if="connectionStatus" class="connection-banner" :class="connectionStatus.type">
-      <i :class="connectionStatus.type === 'success' ? 'fas fa-circle-check' : 'fas fa-triangle-exclamation'"></i>
-      <span>{{ connectionStatus.message }}</span>
-      <button class="btn-close-banner" @click="connectionStatus = null">×</button>
-    </div>
-
     <!-- Cards de Ações de Deploy -->
     <div class="deploy-grid">
       <!-- 1. Backend -->
@@ -326,7 +319,6 @@ const selectedEnv = ref<'prod' | 'dev'>('prod')
 const notifyEmail = ref(true)
 const isRunning = ref(false)
 const testingConnection = ref(false)
-const connectionStatus = ref<{ type: 'success' | 'danger'; message: string } | null>(null)
 
 const terminalLogs = ref('')
 const currentDeploy = ref<any>(null)
@@ -338,24 +330,15 @@ const loadingHistory = ref(false)
 
 async function handleTestConnection() {
   testingConnection.value = true
-  connectionStatus.value = null
   try {
     const res = await testSshConnectionViaWorker()
     if (res.success) {
-      connectionStatus.value = {
-        type: 'success',
-        message: `Servidor VPS Online (${res.host}): ${res.message}`,
-      }
-      toastSuccess('Conexão SSH com a VPS bem-sucedida!')
+      toastSuccess(`VPS Online (${res.host}): Conexão SSH estabelecida com sucesso!`)
     } else {
       throw new Error(res.error || 'Falha de conexão')
     }
   } catch (err: any) {
-    connectionStatus.value = {
-      type: 'danger',
-      message: `Erro ao conectar via SSH: ${err.message}`,
-    }
-    toastError('Erro de conexão SSH: ' + err.message)
+    toastError('Erro ao conectar via SSH com a VPS: ' + (err.message || err))
   } finally {
     testingConnection.value = false
   }
@@ -515,39 +498,53 @@ onUnmounted(() => {
   margin: 0 auto;
 }
 
-/* Header */
-.page-header {
+/* Header com espaçamento aprimorado */
+.bo-page-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.75rem;
+  margin-bottom: 2.25rem;
+  padding-bottom: 1.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 800;
+.bo-page-header-left {
+  flex: 1 1 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+.title-with-badge {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.title-with-badge h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0;
   color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
-.page-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 4px;
-}
-
-.text-gold {
-  color: var(--gold);
+.bo-page-header p {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 10px 0 0 0;
+  max-width: 680px;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
+  align-self: center;
 }
 
 /* Seletor de Ambiente */
@@ -556,75 +553,55 @@ onUnmounted(() => {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 24px;
-  padding: 3px;
+  padding: 4px;
 }
 
 .env-btn {
   border: none;
   background: transparent;
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 20px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 6px;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .env-btn.active {
   background: var(--gold);
   color: #1a1a1a;
-  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
 }
 
 .env-btn.dev.active {
   background: #6366f1;
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
 }
 
-/* Connection Banner */
-.connection-banner {
-  display: flex;
+.header-actions .btn {
+  height: 40px;
+  padding: 0 16px;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: var(--radius);
-  margin-bottom: 1.5rem;
+  gap: 8px;
   font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.connection-banner.success {
-  background: rgba(61, 186, 111, 0.12);
-  border: 1px solid var(--success);
-  color: var(--success);
-}
-
-.connection-banner.danger {
-  background: rgba(224, 82, 82, 0.12);
-  border: 1px solid var(--danger);
-  color: var(--danger);
-}
-
-.btn-close-banner {
-  margin-left: auto;
-  background: transparent;
-  border: none;
-  font-size: 1.2rem;
-  color: inherit;
-  cursor: pointer;
+  font-weight: 600;
+  border-radius: 8px;
+  white-space: nowrap;
 }
 
 /* Grid de Deploy */
 .deploy-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 .deploy-card {
@@ -668,16 +645,18 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.5rem;
+  gap: 8px;
 }
 
 .card-header-row h3 {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-primary);
+  margin: 0;
 }
 
 .card-desc {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
   line-height: 1.45;
   margin-bottom: 1.25rem;
@@ -707,7 +686,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 2rem;
-  flex-wrap: wrap;
   gap: 1.5rem;
 }
 
@@ -715,6 +693,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 1.25rem;
+  flex: 1;
   max-width: 800px;
 }
 
@@ -743,6 +722,7 @@ onUnmounted(() => {
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.45;
+  margin: 0;
 }
 
 .pipeline-right {
@@ -750,6 +730,7 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: flex-end;
   gap: 10px;
+  flex-shrink: 0;
 }
 
 .email-toggle {
@@ -759,12 +740,16 @@ onUnmounted(() => {
   font-size: 0.8rem;
   color: var(--text-secondary);
   cursor: pointer;
+  user-select: none;
 }
 
 .btn-lg {
   height: 48px;
   padding: 0 24px;
   font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Terminal Container */
@@ -784,6 +769,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid #2d2d2d;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .terminal-dots {
@@ -913,6 +900,8 @@ onUnmounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .target-tag {
@@ -923,6 +912,7 @@ onUnmounted(() => {
   font-weight: 600;
   background: var(--bg-surface);
   color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 .target-tag.backend { color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.3); }
@@ -930,4 +920,95 @@ onUnmounted(() => {
 .target-tag.workers { color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
 .target-tag.admin-app { color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.3); }
 .target-tag.pipeline { color: var(--gold); border: 1px solid var(--gold); }
+
+/* ─── Responsividade Total ────────────────────────────────── */
+@media (max-width: 1200px) {
+  .deploy-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .pipeline-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1.5rem;
+    gap: 1.25rem;
+  }
+  .pipeline-right {
+    align-items: stretch;
+  }
+  .pipeline-right .btn-lg {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .bo-page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+  }
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+  .env-toggle {
+    width: 100%;
+  }
+  .env-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 9px 12px;
+  }
+  .header-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+  .deploy-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .pipeline-left {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  .pipeline-icon {
+    width: 46px;
+    height: 46px;
+    font-size: 1.4rem;
+  }
+  .terminal-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .terminal-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .terminal-title {
+    font-size: 0.74rem;
+    word-break: break-all;
+  }
+  .terminal-body {
+    font-size: 0.76rem;
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .title-with-badge h1 {
+    font-size: 1.35rem;
+  }
+  .pipeline-card {
+    padding: 1.15rem;
+  }
+}
 </style>
