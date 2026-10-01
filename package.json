@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "apexcharts": "^3.49.0",
+    "apexcharts": "^6.1.0",
     "axios": "^1.6.8",
     "chart.js": "^4.4.2",
     "vue": "^3.4.21",
