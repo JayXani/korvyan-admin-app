@@ -1,4 +1,4 @@
-# Korvyan Adminpage
+# Korvyan Admin App
 
 Repositório dedicado ao **Painel de Administração Master (Root / Superadmin)** da plataforma **Korvyan Insurance**.
 
