@@ -47,16 +47,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { authLogin } from '@/services/auth.service'
+import { authLogin, authLogoutApi } from '@/services/auth.service'
 import { persistTokenFromCookie } from '@/services/api'
+import { getMe } from '@/services/user.service'
+import { isKorvyTenantHost, isMasterUser } from '@/utils/masterAuth'
 
 const router = useRouter()
 const user_login = ref('')
 const password = ref('')
 const loading = ref(false)
 const errorMsg = ref('')
+
+onMounted(() => {
+  if (!isKorvyTenantHost()) {
+    const host = window.location.hostname
+    window.location.href = `https://${host}/dashboard`
+  }
+})
 
 async function handleLogin() {
   loading.value = true
@@ -65,10 +74,33 @@ async function handleLogin() {
     const response = await authLogin({ use_login: user_login.value, password: password.value })
     if (!response.success) throw new Error(response.message || 'Credenciais inválidas.')
     persistTokenFromCookie(false)
-    const storage = sessionStorage
-    if (!storage.getItem('access_token')) storage.setItem('access_token', 'session')
-    storage.setItem('user_info', JSON.stringify({ name: user_login.value, role: 'Master' }))
-    router.push('/backoffice')
+
+    // Buscar dados reais do usuário autenticado para validação de privilégios Master
+    let me: any = null
+    try {
+      me = await getMe()
+    } catch (err: any) {
+      console.warn('[Master Login] getMe falhou, verificando dados retornados no login:', err)
+      me = (response.data as any)?.user || { user_login: user_login.value }
+    }
+
+    if (!isMasterUser(me)) {
+      try { await authLogoutApi() } catch {}
+      sessionStorage.clear()
+      localStorage.removeItem('user_info')
+      throw new Error('Acesso restrito. Este usuário não possui permissão de Master da plataforma Korvyan.')
+    }
+
+    const userInfo = {
+      ...me,
+      name: me.person?.name || me.username || user_login.value,
+      role: 'Master'
+    }
+
+    sessionStorage.setItem('access_token', 'session')
+    sessionStorage.setItem('user_info', JSON.stringify(userInfo))
+    localStorage.setItem('user_info', JSON.stringify(userInfo))
+    router.push('/')
   } catch (e: any) {
     errorMsg.value = e.message ?? 'Erro ao autenticar.'
   } finally {
