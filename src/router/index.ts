@@ -28,6 +28,7 @@ const router = createRouter({
       meta: { requiresAuth: true },
       children: [
         { path: '', redirect: '/dashboard' },
+        { path: 'backoffice', redirect: '/dashboard' },
         { path: 'dashboard', name: 'dashboard', component: BackofficeView },
         { path: 'deploy', name: 'deploy', component: DeployView },
         { path: 'tenants', name: 'tenants', component: TenantsView },
