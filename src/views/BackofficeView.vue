@@ -1033,6 +1033,10 @@ function handleClickOutside(e: MouseEvent) {
 function navigateTo(path: string) {
   userMenuOpen.value = false
   mobileSidebarOpen.value = false
+  if (path === '/dashboard' || path === '/meu-perfil' || path.startsWith('/app')) {
+    window.location.href = path
+    return
+  }
   router.push(path)
 }
 
