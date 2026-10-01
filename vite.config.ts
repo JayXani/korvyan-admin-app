@@ -7,15 +7,10 @@ const firebaseShim = fileURLToPath(new URL('./src/compat/firebase.ts', import.me
 export default defineConfig({
   plugins: [vue()],
   resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
-      'firebase': firebaseShim,
-      'firebase/app': firebaseShim,
-      'firebase/firestore': firebaseShim,
-      'firebase/auth': firebaseShim,
-      'firebase/storage': firebaseShim,
-      'firebase/analytics': firebaseShim,
-    },
+    alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      { find: /^firebase(\/.*)?$/, replacement: firebaseShim },
+    ],
   },
   server: {
     port: 5174,

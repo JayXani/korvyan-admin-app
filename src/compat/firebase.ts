@@ -1,5 +1,5 @@
 /**
- * Firebase Client Shim for korvyan-adminpage
+ * Firebase Client Shim for korvyan-admin-app
  * 
  * Redireciona chamadas legadas do SDK cliente para o korvyan-workers
  * evitando a instalação do pacote pesado 'firebase' no bundle.
@@ -21,8 +21,36 @@ export const doc = (...parts: string[]) => parts.filter(Boolean).join('/')
 export const collection = (...parts: string[]) => parts.filter(Boolean).join('/')
 export const serverTimestamp = () => new Date().toISOString()
 
+export class Timestamp {
+  seconds: number
+  nanoseconds: number
+  constructor(seconds = 0, nanoseconds = 0) {
+    this.seconds = seconds
+    this.nanoseconds = nanoseconds
+  }
+  toDate() {
+    return new Date(this.seconds * 1000)
+  }
+  toMillis() {
+    return this.seconds * 1000
+  }
+  static now() {
+    const ms = Date.now()
+    return new Timestamp(Math.floor(ms / 1000), (ms % 1000) * 1e6)
+  }
+  static fromDate(date: Date) {
+    const ms = date.getTime()
+    return new Timestamp(Math.floor(ms / 1000), (ms % 1000) * 1e6)
+  }
+  static fromMillis(ms: number) {
+    return new Timestamp(Math.floor(ms / 1000), (ms % 1000) * 1e6)
+  }
+}
+
+export type QueryConstraint = any
+export type DocumentData = any
+
 export const getDoc = async (path: string) => {
-  // Chamada de fallback transparente
   return {
     exists: () => false,
     data: () => ({}),
@@ -31,8 +59,8 @@ export const getDoc = async (path: string) => {
 
 export const getDocs = async (colPath: string) => {
   return {
-    docs: [],
-    forEach: () => {},
+    docs: [] as any[],
+    forEach: (_cb: any) => {},
   }
 }
 
@@ -68,4 +96,5 @@ export default {
   getAuth,
   getFirestore,
   getStorage,
+  Timestamp,
 }
