@@ -1,14 +1,13 @@
 <template>
   <div class="deploy-page">
     <!-- Header -->
-    <div class="page-header">
-      <div class="header-info">
-        <h1 class="page-title">
-          <i class="fas fa-rocket text-gold"></i> Automação de Deploy & CI/CD
-        </h1>
-        <p class="page-subtitle">
-          Dispare implantações remotas na VPS, acompanhe os logs em tempo real e receba resumos gerados por IA.
-        </p>
+    <div class="bo-page-header">
+      <div class="bo-page-header-left">
+        <div class="title-with-badge">
+          <h1>Automação de Deploy & CI/CD</h1>
+          <span class="badge-bo">VPS / WORKERS</span>
+        </div>
+        <p>Dispare implantações remotas na VPS, acompanhe os logs em tempo real e receba resumos gerados por IA.</p>
       </div>
 
       <div class="header-actions">

@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const WORKERS_BASE_URL = import.meta.env.VITE_WORKERS_URL || 'http://localhost:5001'
+const WORKERS_BASE_URL = import.meta.env.VITE_WORKERS_URL || 'https://southamerica-east1-korvyan-50830.cloudfunctions.net/api'
 
 export const workersApi = axios.create({
   baseURL: WORKERS_BASE_URL,

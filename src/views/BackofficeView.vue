@@ -98,6 +98,7 @@
           <div class="nav-section-title mt-4">SISTEMA</div>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'masters' }" @click.prevent="setTab('masters')"><i class="fas fa-user-astronaut"></i> Admins (Root)</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'logs' }" @click.prevent="setTab('logs')"><i class="fas fa-server"></i> Audit Logs</a>
+          <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'deploy' }" @click.prevent="setTab('deploy')"><i class="fas fa-rocket"></i> Automação Deploy</a>
         </nav>
       </aside>
 
@@ -508,6 +509,11 @@
 
           <div v-else-if="activeTab === 'emails'" key="emails" class="fade-panel">
             <EmailsView />
+          </div>
+
+          <!-- TAB: DEPLOY & CI/CD -->
+          <div v-else-if="activeTab === 'deploy'" key="deploy" class="fade-panel">
+            <DeployView />
           </div>
 
           <!-- TAB: CHAMADOS -->
@@ -986,7 +992,7 @@
 <script setup lang="ts">
 import { maskCPF, maskPhone, maskCEP, maskEmail } from '@/utils/masks'
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import { useTheme } from '@/composables/useTheme'
 import { getAllTenants, createTenant, updateTenantConfig, updateTenantApiStatus, type Tenant } from '@/services/tenant.service'
@@ -996,6 +1002,7 @@ import ApiKeysView from './ApiKeysView.vue'
 import FaturamentoView from './FaturamentoView.vue'
 import KanbanView from './KanbanView.vue'
 import EmailsView from './EmailsView.vue'
+import DeployView from './DeployView.vue'
 import { getAccessLogs } from '@/services/audit.service'
 import { getRecentLogs, getStats, type ApiLogEntry, type ApiStats } from '@/services/analytics.service'
 import { apiPost, apiPatch } from '@/services/api'
@@ -1008,6 +1015,7 @@ import { authLogoutApi } from '@/services/auth.service'
 import { signOut } from 'firebase/auth'
 
 const router = useRouter()
+const route = useRoute()
 const db = getFirestore(firebaseApp)
 const { theme, toggleTheme } = useTheme()
 const activeTab = ref('dashboard')
@@ -1768,6 +1776,7 @@ function handleGlobalEsc(e: KeyboardEvent) {
 function setTab(tab: string) {
   activeTab.value = tab
   mobileSidebarOpen.value = false
+  router.replace({ query: { ...route.query, tab } }).catch(() => {})
   if (tab === 'tenants' && !tenantsData.value.length) loadTenants()
   if (tab === 'masters' && !mastersData.value.length) loadMasters()
   if (tab === 'logs' && !logsData.value.length) loadLogs()
@@ -1781,6 +1790,9 @@ function setTab(tab: string) {
 onMounted(async () => {
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('keydown', handleGlobalEsc)
+  if (route.query.tab) {
+    setTab(String(route.query.tab))
+  }
   await Promise.all([loadDashboard(), loadTenants()])
 })
 
