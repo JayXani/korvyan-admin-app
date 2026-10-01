@@ -17,6 +17,11 @@
         <span>Visão Geral</span>
       </router-link>
 
+      <router-link to="/deploy" class="nav-item">
+        <i class="fas fa-rocket"></i>
+        <span>Deploy & CI/CD</span>
+      </router-link>
+
       <router-link to="/tenants" class="nav-item">
         <i class="fas fa-building"></i>
         <span>Gestão de Tenants</span>

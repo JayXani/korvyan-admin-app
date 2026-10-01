@@ -142,3 +142,36 @@ export async function getUserAvatarViaWorker(prefix: string, userId: string): Pr
   const res = await workersApi.get(`/api/tenants/${prefix}/users/${userId}/avatar`)
   return res.data.avatar || ''
 }
+
+// ─── Deploy CI/CD Workers ─────────────────────────────────────────────────────
+export interface DeployTriggerPayload {
+  target: 'backend' | 'front' | 'workers' | 'admin-app' | 'pipeline'
+  env?: 'dev' | 'prod'
+  branch?: string
+  author?: string
+  sendEmail?: boolean
+}
+
+export async function triggerDeployViaWorker(payload: DeployTriggerPayload) {
+  const res = await workersApi.post('/api/deploy/trigger', payload)
+  return res.data
+}
+
+export async function getDeployStatusViaWorker(deployId: string) {
+  const res = await workersApi.get(`/api/deploy/status/${deployId}`)
+  return res.data.deploy
+}
+
+export async function getDeployHistoryViaWorker(limit = 20) {
+  const res = await workersApi.get('/api/deploy/history', { params: { limit } })
+  return res.data.history || []
+}
+
+export async function testSshConnectionViaWorker() {
+  const res = await workersApi.post('/api/deploy/test-connection')
+  return res.data
+}
+
+export function getDeployStreamUrl(deployId: string): string {
+  return `${WORKERS_BASE_URL}/api/deploy/stream/${deployId}`
+}

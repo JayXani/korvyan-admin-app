@@ -12,6 +12,7 @@ const AuditoriaLogsView = () => import('@/views/AuditoriaLogsView.vue')
 const EmailsView = () => import('@/views/EmailsView.vue')
 const FaturamentoView = () => import('@/views/FaturamentoView.vue')
 const KanbanView = () => import('@/views/KanbanView.vue')
+const DeployView = () => import('@/views/DeployView.vue')
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,7 @@ const router = createRouter({
       children: [
         { path: '', redirect: '/dashboard' },
         { path: 'dashboard', name: 'dashboard', component: BackofficeView },
+        { path: 'deploy', name: 'deploy', component: DeployView },
         { path: 'tenants', name: 'tenants', component: TenantsView },
         { path: 'escopos', name: 'escopos', component: EscoposView },
         { path: 'api-keys', name: 'api-keys', component: ApiKeysView },
