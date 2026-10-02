@@ -26,6 +26,11 @@
 
         <p v-if="errorMsg" class="error-msg"><i class="fas fa-circle-exclamation"></i> {{ errorMsg }}</p>
 
+        <div class="remember-row" style="margin: 8px 0 16px; font-size: 13px; color: #a1a1aa; display: flex; align-items: center; gap: 8px;">
+          <input type="checkbox" id="remember" checked />
+          <label for="remember">Lembrar-me - dev</label>
+        </div>
+
         <button type="submit" class="btn-master" :disabled="loading">
           <span v-if="!loading">Desbloquear Sistema <i class="fas fa-arrow-right" style="margin-left:8px"></i></span>
           <i v-else class="fas fa-spinner fa-spin"></i>
