@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="deploy-page">
     <!-- Header -->
     <div class="bo-page-header">
@@ -21,13 +21,12 @@
           >
             <i class="fas fa-shield-check"></i> Produção (main)
           </button>
-          <button 
-            type="button"
-            class="env-btn dev"
+          <button type="button" class="env-btn beta" :class="{ active: selectedEnv === 'beta' }" @click="selectedEnv = 'beta'"><i class="fas fa-flask"></i> Beta (beta)</button>
+          <button type="button" class="env-btn dev"
             :class="{ active: selectedEnv === 'dev' }"
             @click="selectedEnv = 'dev'"
           >
-            <i class="fas fa-code-branch"></i> Dev (development)
+            <i class="fas fa-code-branch"></i> Dev (approval)
           </button>
         </div>
 
@@ -315,7 +314,7 @@ import { useToast } from '@/composables/useToast'
 
 const { success: toastSuccess, error: toastError, info: toastInfo } = useToast()
 
-const selectedEnv = ref<'prod' | 'dev'>('prod')
+const selectedEnv = ref<'prod' | 'beta' | 'dev'>('prod')
 const notifyEmail = ref(true)
 const isRunning = ref(false)
 const testingConnection = ref(false)
@@ -1012,3 +1011,4 @@ onUnmounted(() => {
   }
 }
 </style>
+

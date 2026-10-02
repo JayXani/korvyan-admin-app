@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 
 const WORKERS_BASE_URL = import.meta.env.VITE_WORKERS_URL || 'https://southamerica-east1-korvyan-50830.cloudfunctions.net/api'
 
@@ -146,7 +146,7 @@ export async function getUserAvatarViaWorker(prefix: string, userId: string): Pr
 // ─── Deploy CI/CD Workers ─────────────────────────────────────────────────────
 export interface DeployTriggerPayload {
   target: 'backend' | 'front' | 'workers' | 'admin-app' | 'pipeline'
-  env?: 'dev' | 'prod'
+  env?: 'dev' | 'prod' | 'beta'
   branch?: string
   author?: string
   sendEmail?: boolean
@@ -175,3 +175,4 @@ export async function testSshConnectionViaWorker() {
 export function getDeployStreamUrl(deployId: string): string {
   return `${WORKERS_BASE_URL}/api/deploy/stream/${deployId}`
 }
+
