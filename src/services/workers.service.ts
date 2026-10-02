@@ -152,6 +152,16 @@ export async function deleteTenantConfigViaWorker(prefix: string) {
   return res.data
 }
 
+export async function getTenantEmailsViaWorker(): Promise<string[]> {
+  try {
+    const res = await workersApi.get('/api/tenants/emails')
+    return res.data.emails || []
+  } catch (err) {
+    console.warn('[WorkersService] Falha ao buscar emails dos tenants:', err)
+    return []
+  }
+}
+
 export async function getUserAvatarViaWorker(prefix: string, userId: string): Promise<string> {
   const res = await workersApi.get(`/api/tenants/${prefix}/users/${userId}/avatar`)
   return res.data.avatar || ''

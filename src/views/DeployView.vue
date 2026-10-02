@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="deploy-page">
     <!-- Header -->
     <div class="bo-page-header">
@@ -389,6 +389,10 @@
               <button type="button" class="btn-preset" @click="addBetaClientsPreset">
                 + Clientes Piloto
               </button>
+              <button type="button" class="btn-preset" @click="addTenantEmailsPreset" :disabled="loadingTenantEmails">
+                <i v-if="loadingTenantEmails" class="fas fa-spinner fa-spin"></i>
+                <span v-else>+ E-mails dos Tenants</span>
+              </button>
               <button type="button" class="btn-preset clear" @click="rawRecipients = ''">
                 <i class="fas fa-times"></i> Limpar
               </button>
@@ -510,6 +514,7 @@ import {
   getDeployHistoryViaWorker,
   testSshConnectionViaWorker,
   getDeployStreamUrl,
+  getTenantEmailsViaWorker,
   type DeployTriggerPayload,
 } from '@/services/workers.service'
 import { useToast } from '@/composables/useToast'
@@ -681,6 +686,206 @@ function formatDate(iso?: string) {
 function formatTime(iso?: string) {
   if (!iso) return ''
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+}
+
+// ─── Central de Comunicados / Changelog ──────────────────────────────
+const activeTemplateType = ref<'internal' | 'client'>('internal')
+const sendingCommEmail = ref(false)
+const rawRecipients = ref('')
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const loadingTenantEmails = ref(false)
+
+const serviceOptions = [
+  { id: 'backend', name: 'Backend API' },
+  { id: 'front', name: 'Frontend' },
+  { id: 'workers', name: 'Workers' },
+  { id: 'admin-app', name: 'Admin App' },
+]
+
+const internalForm = ref({
+  version: 'v2.4.0',
+  author: 'DevOps Team',
+  subject: '[Deploy] Notificação Técnica de Atualização',
+  services: ['Backend API', 'Frontend'],
+  commits: '- feat: novas funcionalidades no portal\n- fix: correções na sincronização\n- refactor: melhoria na performance',
+  notes: 'Serviços atualizados e validados com sucesso.',
+})
+
+const clientForm = ref({
+  releaseTitle: 'Novidades & Melhorias na Plataforma',
+  version: 'v2.4',
+  subject: '🎉 Novidades e Atualizações no Sistema Korvyan',
+  features: '• Novo layout otimizado e mais rápido\n• Suporte completo a customização de branding\n• Central de notificações em tempo real',
+  fixes: '• Maior estabilidade na emissão e buscas\n• Correções gerais de usabilidade',
+  footerText: 'Nossa equipe continua trabalhando diariamente para oferecer a melhor experiência para sua operação.',
+})
+
+const parsedRecipients = computed(() => {
+  if (!rawRecipients.value) return []
+  return rawRecipients.value
+    .split(/[\n,;]+/)
+    .map(e => e.trim().toLowerCase())
+    .filter(e => e.length > 0 && e.includes('@'))
+})
+
+function triggerFileInput() {
+  fileInputRef.value?.click()
+}
+
+function handleImportSheet(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (!target.files || !target.files[0]) return
+  const file = target.files[0]
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    const text = (e.target?.result as string) || ''
+    const foundEmails = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []
+    if (foundEmails.length === 0) {
+      toastError('Nenhum endereço de e-mail válido foi encontrado no arquivo.')
+      return
+    }
+    const current = parsedRecipients.value
+    const combined = Array.from(new Set([...current, ...foundEmails.map(x => x.toLowerCase())]))
+    rawRecipients.value = combined.join(', ')
+    toastSuccess(`${foundEmails.length} e-mail(s) importado(s) da planilha com sucesso!`)
+  }
+  reader.readAsText(file)
+}
+
+function exportRecipientsCsv() {
+  if (parsedRecipients.value.length === 0) return
+  const csvContent = 'data:text/csv;charset=utf-8,Email\n' + parsedRecipients.value.join('\n')
+  const encodedUri = encodeURI(csvContent)
+  const link = document.createElement('a')
+  link.setAttribute('href', encodedUri)
+  link.setAttribute('download', `destinatarios_changelog_${new Date().toISOString().split('T')[0]}.csv`)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  toastSuccess('Planilha CSV exportada com sucesso!')
+}
+
+function addInternalPreset() {
+  const team = ['devops@korvyan.com', 'luan@korvyan.com', 'danilo@deskmanager.com.br']
+  const current = parsedRecipients.value
+  const combined = Array.from(new Set([...current, ...team]))
+  rawRecipients.value = combined.join(', ')
+}
+
+function addBetaClientsPreset() {
+  const pilots = ['piloto1@korvyan.com', 'beta-tester@empresa.com.br']
+  const current = parsedRecipients.value
+  const combined = Array.from(new Set([...current, ...pilots]))
+  rawRecipients.value = combined.join(', ')
+}
+
+async function addTenantEmailsPreset() {
+  loadingTenantEmails.value = true
+  try {
+    const emails = await getTenantEmailsViaWorker()
+    if (!emails || emails.length === 0) {
+      toastInfo('Nenhum e-mail de tenant cadastrado no momento.')
+      return
+    }
+    const current = parsedRecipients.value
+    const combined = Array.from(new Set([...current, ...emails.map(e => e.toLowerCase())]))
+    rawRecipients.value = combined.join(', ')
+    toastSuccess(`${emails.length} e-mail(s) de tenants adicionados com sucesso!`)
+  } catch (err: any) {
+    toastError('Erro ao buscar e-mails dos tenants: ' + (err.message || err))
+  } finally {
+    loadingTenantEmails.value = false
+  }
+}
+
+const renderedEmailHtml = computed(() => {
+  if (activeTemplateType.value === 'internal') {
+    const srvList = internalForm.value.services.map(s => `<li style="margin-bottom: 4px;"><strong>${s}</strong></li>`).join('')
+    const commitList = internalForm.value.commits
+      .split('\n')
+      .filter(c => c.trim())
+      .map(c => `<li style="margin-bottom: 4px; font-family: monospace;">${c}</li>`)
+      .join('')
+
+    return `
+      <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 24px; border-radius: 8px;">
+        <div style="border-bottom: 2px solid #d4af37; padding-bottom: 12px; margin-bottom: 16px;">
+          <h2 style="color: #d4af37; margin: 0 0 6px 0;">[DEPLOY] Notificação Técnica de Implantação</h2>
+          <span style="font-size: 13px; color: #94a3b8;">Ambiente: <strong>${selectedEnv.value.toUpperCase()}</strong> | Versão: <strong>${internalForm.value.version}</strong></span>
+        </div>
+        <p style="margin: 0 0 12px 0;">Olá time,</p>
+        <p style="margin: 0 0 16px 0;">Um novo deploy foi executado com sucesso por <strong>${internalForm.value.author}</strong>.</p>
+        <h4 style="color: #60a5fa; margin: 16px 0 8px 0; text-transform: uppercase; font-size: 13px;">Serviços Atualizados:</h4>
+        <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #cbd5e1;">${srvList || '<li>Nenhum serviço selecionado</li>'}</ul>
+        <h4 style="color: #60a5fa; margin: 16px 0 8px 0; text-transform: uppercase; font-size: 13px;">Principais Alterações Técnicas:</h4>
+        <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #e2e8f0;">${commitList || '<li>Sem notas de commits</li>'}</ul>
+        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-left: 3px solid #d4af37; margin-top: 16px; border-radius: 4px;">
+          <p style="margin: 0; font-size: 13px; color: #cbd5e1;"><strong>Observações:</strong> ${internalForm.value.notes || 'Operação finalizada sem anomalias.'}</p>
+        </div>
+      </div>
+    `
+  } else {
+    const featList = clientForm.value.features
+      .split('\n')
+      .filter(f => f.trim())
+      .map(f => `<li style="margin-bottom: 6px;">${f}</li>`)
+      .join('')
+
+    const fixList = clientForm.value.fixes
+      .split('\n')
+      .filter(f => f.trim())
+      .map(f => `<li style="margin-bottom: 6px;">${f}</li>`)
+      .join('')
+
+    return `
+      <div style="font-family: Arial, sans-serif; background-color: #ffffff; color: #1e293b; padding: 28px; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <div style="text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 16px; margin-bottom: 20px;">
+          <h2 style="color: #0f172a; margin: 0 0 6px 0;">${clientForm.value.releaseTitle}</h2>
+          <span style="display: inline-block; background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Versão ${clientForm.value.version}</span>
+        </div>
+        <p style="font-size: 15px; line-height: 1.5; color: #334155;">Prezado cliente,</p>
+        <p style="font-size: 14px; line-height: 1.6; color: #475569;">
+          Temos o prazer de anunciar uma nova atualização com recursos e otimizações desenvolvidos para melhorar sua rotina.
+        </p>
+        <div style="margin: 20px 0;">
+          <h3 style="color: #10b981; font-size: 15px; margin: 0 0 10px 0;">✨ O que há de novo:</h3>
+          <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${featList || '<li>Diversas melhorias na plataforma.</li>'}</ul>
+        </div>
+        <div style="margin: 20px 0;">
+          <h3 style="color: #3b82f6; font-size: 15px; margin: 0 0 10px 0;">⚡ Otimizações & Melhorias:</h3>
+          <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${fixList || '<li>Aprimoramentos de segurança e estabilidade.</li>'}</ul>
+        </div>
+        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px; text-align: center; font-size: 13px; color: #64748b;">
+          <p style="margin: 0 0 6px 0;">${clientForm.value.footerText}</p>
+          <p style="margin: 0; font-weight: bold; color: #0f172a;">Equipe Korvyan</p>
+        </div>
+      </div>
+    `
+  }
+})
+
+async function handleSendCommunication() {
+  if (parsedRecipients.value.length === 0) {
+    toastError('Informe ao menos um destinatário para o envio.')
+    return
+  }
+
+  const subject = activeTemplateType.value === 'internal'
+    ? internalForm.value.subject || `[Deploy] Atualização em ${selectedEnv.value.toUpperCase()}`
+    : clientForm.value.subject || `Atualização de Plataforma Korvyan - ${clientForm.value.version}`
+
+  sendingCommEmail.value = true
+  try {
+    await sendEmail(parsedRecipients.value, {
+      subject,
+      html: renderedEmailHtml.value,
+    })
+    toastSuccess(`Comunicado enviado com sucesso para ${parsedRecipients.value.length} destinatário(s)!`)
+  } catch (err: any) {
+    toastError('Erro ao enviar comunicado por e-mail: ' + (err.message || err))
+  } finally {
+    sendingCommEmail.value = false
+  }
 }
 
 onMounted(() => {

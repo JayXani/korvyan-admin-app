@@ -46,16 +46,36 @@
           <tr v-for="t in filteredTenants" :key="String(t.id || t.tenant_prefix)">
             <td>
               <div class="tenant-branding">
-                <div class="tenant-logo-preview" :style="{ background: (t.primary_color as string) || 'var(--gold)' }">
+                <div v-if="t.logo_url" class="tenant-logo-preview has-img">
+                  <img :src="t.logo_url" :alt="t.name || t.tenant_prefix" class="tenant-logo-img" />
+                </div>
+                <div v-else class="tenant-logo-preview" :style="{ background: (t.primary_color as string) || 'var(--gold)' }">
                   {{ (t.name || t.tenant_prefix).substring(0,2).toUpperCase() }}
                 </div>
-                <div>
-                  <p class="tenant-name">{{ t.name || 'Sem Nome' }}</p>
+                <div class="tenant-info-block">
+                  <div class="tenant-name-row">
+                    <p class="tenant-name">{{ t.name || 'Sem Nome' }}</p>
+                    <span v-if="t.tenant_css || t.ten_css" class="badge-tag-mini" title="Possui CSS customizado">
+                      <i class="fas fa-code"></i> CSS
+                    </span>
+                  </div>
+                  <p v-if="t.email" class="tenant-email">
+                    <i class="fas fa-envelope"></i> {{ t.email }}
+                  </p>
                   <p class="tenant-plan">Plano: {{ (t.plan as string) || 'Standard' }}</p>
                 </div>
               </div>
             </td>
-            <td><code class="prefix-code">{{ t.tenant_prefix }}</code></td>
+            <td>
+              <code class="prefix-code">{{ t.tenant_prefix }}</code>
+              <div v-if="t.tenant_public_key || t.ten_public_key" class="public-key-badge-row" :title="'Chave pública: ' + (t.tenant_public_key || t.ten_public_key)">
+                <i class="fas fa-key text-gold"></i>
+                <span class="pk-snippet">{{ (t.tenant_public_key || t.ten_public_key).substring(0, 10) }}...</span>
+                <button type="button" class="btn-copy-mini" @click="copySnippet(t.tenant_public_key || t.ten_public_key)" title="Copiar chave pública">
+                  <i class="fas fa-copy"></i>
+                </button>
+              </div>
+            </td>
             <td>
               <div class="color-indicator">
                 <span class="color-dot" :style="{ background: (t.primary_color as string) || 'var(--gold)' }"></span>
@@ -130,11 +150,17 @@
                 </select>
               </div>
 
-              <div class="form-field full" v-if="isEditing">
+              <div class="form-field full">
+                <label class="form-label">E-MAIL DE CONTATO (CHANGELOG / NOTIFICAÇÕES)</label>
+                <input v-model="newTenant.email" type="email" placeholder="contato@empresa.com" />
+              </div>
+
+              <div class="form-field full">
                 <label class="form-label">CHAVE PÚBLICA DO TENANT (WEBHOOKS / INTEGRAÇÃO)</label>
                 <div style="display:flex; gap:8px">
                   <input type="text" readonly :value="newTenant.ten_public_key || 'tpk_default_key'" style="flex:1; font-family:monospace; background:var(--bg-tertiary)" />
                   <button type="button" class="btn btn-gold btn-sm" @click="copyPublicKey"><i class="fas fa-copy"></i> Copiar</button>
+                  <button type="button" class="btn btn-outline btn-sm" @click="generateNewPublicKey" title="Gerar nova chave pública"><i class="fas fa-rotate"></i></button>
                 </div>
               </div>
 
@@ -145,13 +171,21 @@
 
               <div class="form-field full">
                 <label class="form-label">LOGOTIPO DO TENANT</label>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                  <input type="file" @change="handleLogoUpload" accept="image/png, image/jpeg" />
-                  <div v-if="uploadProgress> 0 && uploadProgress < 100" style="font-size: 0.8rem; color: var(--gold);">
-                    Enviando: {{ uploadProgress }}%
+                <div class="logo-modal-upload-row">
+                  <div v-if="newTenant.logo_url" class="logo-preview-box">
+                    <img :src="newTenant.logo_url" alt="Logo preview" class="logo-preview-img" />
+                    <button type="button" class="btn-remove-logo" @click="newTenant.logo_url = ''" title="Remover logo">
+                      <i class="fas fa-trash"></i>
+                    </button>
                   </div>
-                  <div v-if="newTenant.logo_url" style="font-size: 0.8rem; color: var(--success);">
-                    <i class="fas fa-check-circle"></i> Upload concluído
+                  <div class="logo-upload-controls">
+                    <input type="file" @change="handleLogoUpload" accept="image/png, image/jpeg, image/svg+xml, image/webp" />
+                    <div v-if="uploadProgress > 0 && uploadProgress < 100" style="font-size: 0.8rem; color: var(--gold);">
+                      Enviando: {{ uploadProgress }}%
+                    </div>
+                    <div v-if="newTenant.logo_url" style="font-size: 0.8rem; color: var(--success);">
+                      <i class="fas fa-check-circle"></i> Logotipo vinculado
+                    </div>
                   </div>
                 </div>
               </div>
@@ -232,7 +266,7 @@
 <script setup lang="ts">
 import { maskCPF, maskPhone, maskCEP, maskEmail } from '@/utils/masks'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { getAllTenants, createTenant, updateTenantApiStatus, deleteTenantsApi, removeTenantConfig, type Tenant } from '@/services/tenant.service'
+import { getAllTenants, createTenant, updateTenantConfig, updateTenantApiStatus, deleteTenantsApi, removeTenantConfig, type Tenant } from '@/services/tenant.service'
 import { uploadTenantLogoViaWorker as uploadTenantLogo } from '@/services/workers.service'
 import { ApiError } from '@/services/api'
 import { useToast } from '@/composables/useToast'
@@ -257,13 +291,32 @@ const newTenant = ref<Partial<Tenant> & { ten_css?: string; ten_public_key?: str
   primary_color: '#D4AF37',
   plan: 'basic',
   support_phone: '',
+  email: '',
   logo_url: '',
   ten_css: '',
   ten_public_key: ''
 })
 
+function generateNewPublicKey() {
+  const randomPart = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 8)
+  const key = `tpk_${randomPart}`
+  newTenant.value.ten_public_key = key
+  newTenant.value.tenant_public_key = key
+  toastSuccess('Nova chave pública gerada!')
+}
+
+async function copySnippet(text?: string) {
+  if (!text) return
+  try {
+    await navigator.clipboard.writeText(text)
+    toastSuccess('Chave pública copiada!')
+  } catch {
+    toastError('Erro ao copiar chave')
+  }
+}
+
 async function copyPublicKey() {
-  const key = newTenant.value.ten_public_key || 'tpk_' + Math.random().toString(36).substring(2)
+  const key = newTenant.value.ten_public_key || newTenant.value.tenant_public_key || 'tpk_' + Math.random().toString(36).substring(2)
   await navigator.clipboard.writeText(key)
   toastSuccess('Chave pública copiada!')
 }
@@ -318,16 +371,27 @@ function openModal(t?: Tenant) {
   modalError.value = ''
   if (t) {
     isEditing.value = true
-    newTenant.value = { ...t }
+    newTenant.value = {
+      ...t,
+      email: t.email || '',
+      ten_public_key: t.tenant_public_key || t.ten_public_key || '',
+      ten_css: t.tenant_css || t.ten_css || '',
+      logo_url: t.logo_url || '',
+    }
   } else {
     isEditing.value = false
+    const randomPart = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 8)
     newTenant.value = {
       tenant_prefix: '',
       name: '',
       primary_color: '#D4AF37',
       plan: 'basic',
       support_phone: '',
-      logo_url: ''
+      email: '',
+      logo_url: '',
+      ten_css: '',
+      ten_public_key: `tpk_${randomPart}`,
+      tenant_public_key: `tpk_${randomPart}`
     }
   }
   showModal.value = true
@@ -338,10 +402,14 @@ async function saveTenantAction() {
   savingTenant.value = true
   modalError.value = ''
   try {
-    await createTenant(newTenant.value as any)
+    if (isEditing.value) {
+      await updateTenantConfig(newTenant.value.tenant_prefix, newTenant.value as any)
+    } else {
+      await createTenant(newTenant.value as any)
+    }
     await loadTenants()
     showModal.value = false
-    toastSuccess('Tenant salvo com sucesso!')
+    toastSuccess(isEditing.value ? 'Tenant atualizado com sucesso!' : 'Tenant criado com sucesso!')
   } catch (err: any) {
     modalError.value = err.message || 'Erro ao salvar tenant'
     toastError(modalError.value)
@@ -454,6 +522,127 @@ onUnmounted(() => {
   color: #fff; font-weight: 800; font-size: 0.9rem;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
+.tenant-logo-preview.has-img {
+  background: var(--bg-surface, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.1));
+  overflow: hidden;
+  padding: 2px;
+}
+.tenant-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.tenant-info-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tenant-name-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.badge-tag-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+.tenant-email {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.public-key-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  font-family: monospace;
+  width: fit-content;
+}
+.pk-snippet {
+  color: var(--text-secondary);
+}
+.btn-copy-mini {
+  background: none;
+  border: none;
+  color: var(--gold);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.72rem;
+  transition: opacity 0.2s;
+}
+.btn-copy-mini:hover {
+  opacity: 0.8;
+}
+
+/* Modal Logo upload & preview */
+.logo-modal-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+.logo-preview-box {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.logo-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.btn-remove-logo {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background: rgba(220, 38, 38, 0.85);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  font-size: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.logo-upload-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
 .tenant-name { font-weight: 700; color: var(--text-primary); font-size: 0.9rem; margin: 0; }
 .tenant-plan { font-size: 0.7rem; color: var(--gold); font-weight: 600; text-transform: uppercase; margin: 0; }
 
