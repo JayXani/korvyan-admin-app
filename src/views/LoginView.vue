@@ -28,7 +28,7 @@
 
         <div class="remember-row" style="margin: 8px 0 16px; font-size: 13px; color: #a1a1aa; display: flex; align-items: center; gap: 8px;">
           <input type="checkbox" id="remember" checked />
-          <label for="remember">Lembrar-me - dev</label>
+          <label for="remember">Lembrar-me - prod</label>
         </div>
 
         <button type="submit" class="btn-master" :disabled="loading">
