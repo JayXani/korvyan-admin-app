@@ -21,7 +21,6 @@ import {
   getAllTenantConfigs,
   deleteTenantConfig,
   uploadTenantLogo,
-  type TenantConfig,
 } from './firebase.service'
 
 export async function updateUserAvatar(tenant: string, userId: string, file: File): Promise<string> {
@@ -53,7 +52,28 @@ export async function deleteReportFirestore(reportId: string): Promise<void> {
   }
 }
 
-export type { TenantConfig as Tenant }
+export interface TenantConfig {
+  id?: string | number
+  tenant_prefix: string
+  name?: string
+  primary_color?: string
+  support_phone?: string
+  plan?: string
+  logo_url?: string
+  email?: string
+  tenant_public_key?: string
+  ten_public_key?: string
+  tenant_css?: string
+  ten_css?: string
+  tenant_enabled?: boolean
+  tenant_is_template?: boolean
+  created_at?: string
+  addons?: Record<string, boolean>
+  addon_values?: Record<string, any>
+  [key: string]: any
+}
+
+export type Tenant = TenantConfig
 
 export interface CreateTenantPayload {
   tenant_prefix: string
@@ -63,6 +83,14 @@ export interface CreateTenantPayload {
   plan?: string
   logo_url?: string
   logo_file?: File
+  email?: string
+  tenant_public_key?: string
+  ten_public_key?: string
+  tenant_css?: string
+  ten_css?: string
+  addons?: Record<string, boolean>
+  addon_values?: Record<string, any>
+  [key: string]: any
 }
 
 // Remove campos undefined para evitar erro do Firestore
@@ -116,6 +144,13 @@ export async function createTenant(payload: CreateTenantPayload): Promise<Tenant
     support_phone: rest.support_phone,
     plan: rest.plan || 'basic',
     logo_url: logo_url || '',
+    email: rest.email || '',
+    tenant_public_key: rest.tenant_public_key || rest.ten_public_key || '',
+    ten_public_key: rest.ten_public_key || rest.tenant_public_key || '',
+    tenant_css: rest.tenant_css || rest.ten_css || '',
+    ten_css: rest.ten_css || rest.tenant_css || '',
+    addons: rest.addons,
+    addon_values: rest.addon_values,
     status: 'ACTIVE',
   })
   await saveTenantConfig(payload.tenant_prefix, config)
@@ -147,7 +182,17 @@ export async function getAllTenants(onEnriched?: (enriched: TenantConfig[]) => v
   // 2. Tenta a API em paralelo para enriquecimento (falha silenciosa)
   try {
     const body: any = {
-      columns: { id: true, tenant_prefix: true, tenant_enabled: true, tenant_is_template: true },
+      columns: {
+        id: true,
+        tenant_prefix: true,
+        tenant_enterprise_name: true,
+        tenant_enabled: true,
+        tenant_is_template: true,
+        tenant_logo: true,
+        tenant_public_key: true,
+        tenant_css: true,
+        schema_version: true,
+      },
       filters: {},
       offset: 0,
       limit: 100
@@ -163,12 +208,38 @@ export async function getAllTenants(onEnriched?: (enriched: TenantConfig[]) => v
       const enriched = apiTenants.map((t: any) => {
         const prefix = t.tenant_prefix || ''
         const fsCfg = fsMap.get(prefix) || {}
-        return { ...t, ...fsCfg }
+        const logo = fsCfg.logo_url || t.tenant_logo || t.ten_logo_url || ''
+        const publicKey = fsCfg.tenant_public_key || fsCfg.ten_public_key || t.tenant_public_key || t.ten_public_key || ''
+        const css = fsCfg.tenant_css || fsCfg.ten_css || t.tenant_css || t.ten_css || ''
+        const email = fsCfg.email || t.email || ''
+        const name = fsCfg.name || t.tenant_enterprise_name || t.ten_enterprise_name || prefix
+
+        return {
+          ...t,
+          ...fsCfg,
+          name,
+          logo_url: logo,
+          tenant_public_key: publicKey,
+          ten_public_key: publicKey,
+          tenant_css: css,
+          ten_css: css,
+          email,
+        }
       })
 
       // Adiciona tenants que só existem no Firestore (ex: pendentes de sincronização)
       const apiPrefixes = new Set(apiTenants.map((t: any) => t.tenant_prefix))
-      const firestoreOnly = fsTenants.filter(t => !apiPrefixes.has(t.tenant_prefix))
+      const firestoreOnly = fsTenants
+        .filter(t => !apiPrefixes.has(t.tenant_prefix))
+        .map(t => ({
+          ...t,
+          name: t.name || t.tenant_prefix,
+          tenant_public_key: t.tenant_public_key || t.ten_public_key || '',
+          ten_public_key: t.ten_public_key || t.tenant_public_key || '',
+          tenant_css: t.tenant_css || t.ten_css || '',
+          ten_css: t.ten_css || t.tenant_css || '',
+          email: t.email || '',
+        }))
       const final = [...enriched, ...firestoreOnly]
 
       if (onEnriched) onEnriched(final)
@@ -204,7 +275,21 @@ export async function updateTenantConfig(
     }
   }
 
-  await saveTenantConfig(tenantPrefix, { ...rest, logo_url })
+  const toSave = stripUndefined({
+    ...rest,
+    ...(logo_url ? { logo_url } : {}),
+    ...(rest.tenant_public_key || rest.ten_public_key ? {
+      tenant_public_key: rest.tenant_public_key || rest.ten_public_key,
+      ten_public_key: rest.ten_public_key || rest.tenant_public_key,
+    } : {}),
+    ...(rest.tenant_css !== undefined || rest.ten_css !== undefined ? {
+      tenant_css: rest.tenant_css ?? rest.ten_css,
+      ten_css: rest.ten_css ?? rest.tenant_css,
+    } : {}),
+    ...(rest.email !== undefined ? { email: rest.email } : {}),
+  })
+
+  await saveTenantConfig(tenantPrefix, toSave)
 }
 
 /**
