@@ -1,6 +1,20 @@
-﻿import axios from 'axios'
+import axios from 'axios'
 
-const WORKERS_BASE_URL = import.meta.env.VITE_WORKERS_URL || 'https://southamerica-east1-korvyan-50830.cloudfunctions.net/api'
+function resolveWorkersUrl(): string {
+  if (import.meta.env.VITE_WORKERS_URL) {
+    return import.meta.env.VITE_WORKERS_URL
+  }
+  const host = typeof window !== 'undefined' ? window.location.hostname : ''
+  if (host.includes('.beta.') || host.startsWith('beta.') || host.includes('beta')) {
+    return 'https://southamerica-east1-korvyan-50830.cloudfunctions.net/apiBeta'
+  }
+  if (host.includes('.development.') || host.startsWith('development.') || host.includes('dev')) {
+    return 'https://southamerica-east1-korvyan-50830.cloudfunctions.net/apiDev'
+  }
+  return 'https://southamerica-east1-korvyan-50830.cloudfunctions.net/api'
+}
+
+const WORKERS_BASE_URL = resolveWorkersUrl()
 
 export const workersApi = axios.create({
   baseURL: WORKERS_BASE_URL,

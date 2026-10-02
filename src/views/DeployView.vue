@@ -7,7 +7,7 @@
           <h1>Automação de Deploy & CI/CD</h1>
           <span class="badge-bo">VPS / WORKERS</span>
         </div>
-        <p>Dispare implantações remotas na VPS, acompanhe os logs em tempo real e receba resumos gerados por IA.</p>
+        <p>Dispare implantações remotas na VPS, acompanhe os logs em tempo real e gerencie comunicados e changelog.</p>
       </div>
 
       <div class="header-actions">
@@ -152,7 +152,7 @@
           <p>
             Executa a esteira sequencial completa: 
             <strong>Backend ➔ Workers ➔ Frontend ➔ Admin App</strong>.
-            Gera resumo das mudanças via IA (Gemini) e envia e-mail com relatório final para a equipe.
+            Executa a esteira sequencial completa e envia notificação de status para a equipe.
           </p>
         </div>
       </div>
@@ -206,21 +206,223 @@
         </div>
       </div>
 
-      <!-- Resumo com IA Gemini quando concluído -->
-      <div v-if="currentDeploy?.aiSummary" class="ai-summary-box">
-        <div class="ai-summary-header">
-          <i class="fas fa-sparkles text-gold"></i>
-          <span>Resumo Executivo Gerado por IA (Gemini):</span>
-        </div>
-        <div class="ai-summary-content">
-          {{ currentDeploy.aiSummary }}
-        </div>
-      </div>
-
       <!-- Janela do Terminal -->
       <div class="terminal-body" ref="terminalBodyRef">
         <pre>{{ terminalLogs }}</pre>
         <div v-if="isRunning" class="terminal-cursor">_</div>
+      </div>
+    </div>
+
+    <!-- Central de Comunicados: Templates de Deploy & Changelog -->
+    <div class="card deploy-comm-card" style="margin-top: 2rem;">
+      <div class="comm-header">
+        <div>
+          <div class="comm-title-row">
+            <h2 class="section-title">
+              <i class="fas fa-bullhorn text-gold" style="margin-right: 8px;"></i>
+              Central de Comunicados & Release Notes
+            </h2>
+            <span class="badge" :class="selectedEnv === 'prod' ? 'badge-gold' : selectedEnv === 'beta' ? 'badge-info' : 'badge-muted'">
+              {{ selectedEnv === 'prod' ? 'PRODUÇÃO' : selectedEnv === 'beta' ? 'BETA' : 'DEV' }}
+            </span>
+          </div>
+          <p class="section-sub">
+            Gere e envie comunicados técnicos internos para a equipe ou notas de atualização (changelog) amigáveis para clientes.
+          </p>
+        </div>
+
+        <!-- Seletor de Tipo de Template -->
+        <div class="template-type-toggle">
+          <button 
+            type="button" 
+            class="tpl-btn" 
+            :class="{ active: activeTemplateType === 'internal' }"
+            @click="activeTemplateType = 'internal'"
+          >
+            <i class="fas fa-code-merge"></i> Deploy Interno (DevOps)
+          </button>
+          <button 
+            type="button" 
+            class="tpl-btn client" 
+            :class="{ active: activeTemplateType === 'client' }"
+            @click="activeTemplateType = 'client'"
+          >
+            <i class="fas fa-sparkles"></i> Changelog para Clientes
+          </button>
+        </div>
+      </div>
+
+      <!-- Grid: Formulário + Preview -->
+      <div class="comm-grid">
+        <!-- Coluna 1: Edição do Template & Destinatários -->
+        <div class="comm-form-col">
+          
+          <!-- Campos do Template Interno -->
+          <div v-if="activeTemplateType === 'internal'" class="tpl-form-fields">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">Versão / Tag</label>
+                <input type="text" v-model="internalForm.version" class="form-control-dark" placeholder="v2.4.0" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Autor / Responsável</label>
+                <input type="text" v-model="internalForm.author" class="form-control-dark" placeholder="DevOps Team" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Assunto do E-mail</label>
+              <input type="text" v-model="internalForm.subject" class="form-control-dark" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Serviços Atualizados</label>
+              <div class="services-chips">
+                <label v-for="srv in serviceOptions" :key="srv.id" class="chip-label">
+                  <input type="checkbox" :value="srv.name" v-model="internalForm.services" />
+                  <span>{{ srv.name }}</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mudanças Técnicas / Commits</label>
+              <textarea 
+                v-model="internalForm.commits" 
+                rows="4" 
+                class="form-control-dark font-mono"
+                placeholder="- feat: nova funcionalidade X&#10;- fix: correção de bug na API&#10;- refactor: melhoria na performance"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Instruções Operacionais / Observações</label>
+              <input type="text" v-model="internalForm.notes" class="form-control-dark" placeholder="Serviços Nginx e Systemd reiniciados normalmente." />
+            </div>
+          </div>
+
+          <!-- Campos do Changelog para Clientes -->
+          <div v-else class="tpl-form-fields">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label class="form-label">Título da Release</label>
+                <input type="text" v-model="clientForm.releaseTitle" class="form-control-dark" placeholder="Atualização de Outubro — Novidades no Portal" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Versão da Plataforma</label>
+                <input type="text" v-model="clientForm.version" class="form-control-dark" placeholder="v2.4" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Assunto do E-mail</label>
+              <input type="text" v-model="clientForm.subject" class="form-control-dark" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">✨ O que há de novo (Novos Recursos)</label>
+              <textarea 
+                v-model="clientForm.features" 
+                rows="3" 
+                class="form-control-dark"
+                placeholder="• Novo módulo de emissão de apólices mais ágil&#10;• Dashboard com indicadores em tempo real"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">⚡ Melhorias e Correções</label>
+              <textarea 
+                v-model="clientForm.fixes" 
+                rows="3" 
+                class="form-control-dark"
+                placeholder="• Navegação mais rápida nos relatórios&#10;• Maior estabilidade na sincronização de dados"
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Mensagem de Encerramento / Suporte</label>
+              <input type="text" v-model="clientForm.footerText" class="form-control-dark" placeholder="Em caso de dúvidas ou necessidade de suporte, conte sempre conosco!" />
+            </div>
+          </div>
+
+          <!-- Gestão de Destinatários de E-mail -->
+          <div class="recipients-box">
+            <div class="recipients-header">
+              <div class="recipients-title">
+                <i class="fas fa-envelope-open-text text-gold"></i>
+                <strong>Destinatários do Envio</strong>
+                <span class="count-badge">{{ parsedRecipients.length }} e-mail(s)</span>
+              </div>
+
+              <!-- Ações de Planilha -->
+              <div class="sheet-actions">
+                <input 
+                  type="file" 
+                  ref="fileInputRef" 
+                  accept=".csv,.txt" 
+                  style="display:none" 
+                  @change="handleImportSheet"
+                />
+                <button type="button" class="btn-tool" @click="triggerFileInput" title="Carregar lista de e-mails de arquivo CSV ou TXT">
+                  <i class="fas fa-file-import"></i> Importar Planilha
+                </button>
+                <button type="button" class="btn-tool" @click="exportRecipientsCsv" :disabled="parsedRecipients.length === 0" title="Baixar lista em CSV">
+                  <i class="fas fa-file-export"></i> Exportar Planilha
+                </button>
+              </div>
+            </div>
+
+            <!-- Campo de E-mails manuais / múltiplos -->
+            <textarea 
+              v-model="rawRecipients" 
+              rows="3" 
+              class="form-control-dark font-mono"
+              placeholder="Digite os e-mails separados por vírgula (ex: luan@empresa.com, cliente@empresa.com...)"
+            ></textarea>
+
+            <!-- Presets Rápidos -->
+            <div class="presets-row">
+              <span class="preset-label">Atalhos:</span>
+              <button type="button" class="btn-preset" @click="addInternalPreset">
+                + Equipe Interna
+              </button>
+              <button type="button" class="btn-preset" @click="addBetaClientsPreset">
+                + Clientes Piloto
+              </button>
+              <button type="button" class="btn-preset clear" @click="rawRecipients = ''">
+                <i class="fas fa-times"></i> Limpar
+              </button>
+            </div>
+          </div>
+
+          <!-- Botão de Disparo -->
+          <div class="send-action-row" style="margin-top: 1.25rem;">
+            <button 
+              class="btn btn-gold btn-lg w-100" 
+              :disabled="sendingCommEmail || parsedRecipients.length === 0"
+              @click="handleSendCommunication"
+            >
+              <i :class="sendingCommEmail ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
+              <span>{{ sendingCommEmail ? 'Enviando Comunicado...' : `Disparar Comunicado (${parsedRecipients.length} destinatários)` }}</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Coluna 2: Pré-visualização do E-mail (Preview) -->
+        <div class="comm-preview-col">
+          <div class="preview-header">
+            <div class="preview-title">
+              <i class="fas fa-eye text-gold"></i>
+              <strong>Pré-visualização do E-mail</strong>
+            </div>
+            <span class="preview-tag">
+              {{ activeTemplateType === 'internal' ? 'TEMPLATE INTERNO' : 'CHANGELOG CLIENTE' }}
+            </span>
+          </div>
+
+          <div class="email-preview-wrapper" v-html="renderedEmailHtml"></div>
+        </div>
       </div>
     </div>
 
@@ -302,7 +504,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   triggerDeployViaWorker,
   getDeployHistoryViaWorker,
@@ -311,6 +513,7 @@ import {
   type DeployTriggerPayload,
 } from '@/services/workers.service'
 import { useToast } from '@/composables/useToast'
+import { sendEmail } from '@/services/mail.service'
 
 const { success: toastSuccess, error: toastError, info: toastInfo } = useToast()
 
@@ -1012,3 +1215,300 @@ onUnmounted(() => {
 }
 </style>
 
+
+
+
+/* ─── Central de Comunicados & Changelog ─── */
+.deploy-comm-card {
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 1.75rem;
+}
+
+.comm-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.comm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.comm-title-row h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.template-type-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.tpl-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #a1a1aa);
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.tpl-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+}
+
+.tpl-btn.client.active {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+.comm-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.75rem;
+}
+
+@media (max-width: 1024px) {
+  .comm-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comm-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 0.75rem;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary, #cbd5e1);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-control-dark {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  padding: 9px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-control-dark:focus {
+  border-color: var(--gold, #d4af37);
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+.font-mono {
+  font-family: monospace;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.services-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #cbd5e1);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.chip-label:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chip-label input:checked + span {
+  color: var(--gold, #d4af37);
+  font-weight: 600;
+}
+
+.recipients-box {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.recipients-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.recipients-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #ffffff;
+}
+
+.count-badge {
+  font-size: 0.72rem;
+  background: rgba(212, 175, 55, 0.2);
+  color: var(--gold, #d4af37);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-tool {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s;
+}
+
+.btn-tool:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.btn-tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.presets-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.preset-label {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.btn-preset {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--text-secondary, #cbd5e1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-preset:hover {
+  border-color: var(--gold, #d4af37);
+  color: var(--gold, #d4af37);
+}
+
+.btn-preset.clear:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.comm-preview-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #ffffff;
+}
+
+.preview-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.email-preview-wrapper {
+  background: #0f172a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.25rem;
+  max-height: 580px;
+  overflow-y: auto;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
