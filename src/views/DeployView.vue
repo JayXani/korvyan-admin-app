@@ -492,7 +492,7 @@
                 Nenhum histórico de deploy registrado até o momento.
               </td>
             </tr>
-            <tr v-for="item in historyList" :key="item.id">
+            <tr v-for="item in paginatedHistory" :key="item.id">
               <td>
                 <strong>{{ formatDate(item.started_at) }}</strong>
                 <div style="font-size: 0.72rem; color: var(--text-muted)">{{ formatTime(item.started_at) }}</div>
@@ -503,8 +503,8 @@
                 </span>
               </td>
               <td>
-                <span class="badge" :class="item.env === 'prod' ? 'badge-gold' : 'badge-muted'">
-                  {{ item.env === 'prod' ? 'PRODUÇÃO' : 'DEV' }}
+                <span class="badge" :class="item.env === 'prod' ? 'badge-gold' : (item.env === 'beta' ? 'badge-info' : 'badge-muted')">
+                  {{ item.env === 'prod' ? 'PRODUÇÃO' : (item.env === 'beta' ? 'BETA' : 'DEV') }}
                 </span>
               </td>
               <td>{{ item.author || 'Super Admin' }}</td>
@@ -521,13 +521,45 @@
                 </span>
               </td>
               <td style="text-align: right">
-                <button class="btn btn-ghost" @click="viewDeployDetail(item)" title="Ver Logs Completos">
-                  <i class="fas fa-terminal"></i>
+                <button 
+                  class="btn btn-ghost" 
+                  :class="{ 'btn-log-expired': isLogExpired(item) }"
+                  @click="viewDeployDetail(item)" 
+                  :title="isLogExpired(item) ? 'Log Expirado (Ver detalhes)' : 'Ver Logs Completos'"
+                >
+                  <i :class="isLogExpired(item) ? 'fas fa-clock-rotate-left' : 'fas fa-terminal'"></i>
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Paginação do Histórico (15 em 15) -->
+      <div v-if="historyList.length > 0" class="history-pagination">
+        <div class="history-pagination-info">
+          Mostrando <strong>{{ (historyPage - 1) * historyPageSize + 1 }}–{{ Math.min(historyPage * historyPageSize, historyList.length) }}</strong> de <strong>{{ historyList.length }}</strong> registros
+          <span class="retention-hint">
+            <i class="fas fa-shield-halved"></i> Retenção de logs: Dev (72h), Beta (5 dias), Prod (1 mês)
+          </span>
+        </div>
+        <div class="history-pagination-actions">
+          <button 
+            class="btn btn-outline btn-sm" 
+            :disabled="historyPage <= 1" 
+            @click="historyPage--"
+          >
+            <i class="fas fa-chevron-left"></i> Anterior
+          </button>
+          <span class="page-indicator">Página {{ historyPage }} de {{ totalHistoryPages }}</span>
+          <button 
+            class="btn btn-outline btn-sm" 
+            :disabled="historyPage >= totalHistoryPages" 
+            @click="historyPage++"
+          >
+            Próxima <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -579,6 +611,17 @@ let eventSource: EventSource | null = null
 
 const historyList = ref<any[]>([])
 const loadingHistory = ref(false)
+const historyPage = ref(1)
+const historyPageSize = ref(15)
+
+const totalHistoryPages = computed(() => {
+  return Math.ceil(historyList.value.length / historyPageSize.value) || 1
+})
+
+const paginatedHistory = computed(() => {
+  const start = (historyPage.value - 1) * historyPageSize.value
+  return historyList.value.slice(start, start + historyPageSize.value)
+})
 
 async function handleTestConnection() {
   testingConnection.value = true
@@ -694,9 +737,27 @@ function clearTerminal() {
   currentDeploy.value = null
 }
 
+function isLogExpired(item: any): boolean {
+  if (item?.log_expired === true) return true
+  const dateVal = item?.started_at || item?.ended_at || item?.created_at
+  if (!dateVal) return false
+  const time = new Date(dateVal).getTime()
+  if (isNaN(time)) return false
+  const diffHours = (Date.now() - time) / (1000 * 60 * 60)
+  const env = (item?.env || 'dev').toLowerCase().trim()
+  if (env === 'dev') return diffHours > 72
+  if (env === 'beta') return diffHours > (5 * 24)
+  if (env === 'prod' || env === 'production' || env === 'produção') return diffHours > (30 * 24)
+  return diffHours > 72
+}
+
 function viewDeployDetail(item: any) {
   currentDeploy.value = item
-  terminalLogs.value = item.log || 'Nenhum log armazenado para este registro.'
+  if (isLogExpired(item)) {
+    terminalLogs.value = `⚠️ [LOG EXPIRADO PELA POLÍTICA DE RETENÇÃO]\n\nOs registros de log deste deploy foram expirados automaticamente conforme a política de retenção:\n- Ambiente Dev: 72 horas\n- Ambiente Beta: 5 dias\n- Ambiente Produção: 1 mês (30 dias)\n\n──────────────────────────────────────────\nID: ${item.id}\nAlvo: ${formatTarget(item.target)}\nAmbiente: ${(item.env || 'DEV').toUpperCase()}\nAutor: ${item.author || 'Super Admin'}\nInício: ${formatDate(item.started_at)} às ${formatTime(item.started_at)}\nDuração: ${item.duration_seconds || 0}s\nStatus: ${(item.status || '').toUpperCase()}`
+  } else {
+    terminalLogs.value = item.log || 'Nenhum log armazenado para este registro.'
+  }
   scrollToBottom()
   window.scrollTo({ top: 350, behavior: 'smooth' })
 }
@@ -704,7 +765,10 @@ function viewDeployDetail(item: any) {
 async function loadHistory() {
   loadingHistory.value = true
   try {
-    historyList.value = await getDeployHistoryViaWorker(20)
+    historyList.value = await getDeployHistoryViaWorker(100)
+    if (historyPage.value > totalHistoryPages.value) {
+      historyPage.value = 1
+    }
   } catch (e) {
     console.warn('[History Error]', e)
   } finally {
@@ -1884,6 +1948,67 @@ onUnmounted(() => {
   max-height: 580px;
   overflow-y: auto;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Paginação do Histórico de Deploys */
+.history-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border-light, rgba(255, 255, 255, 0.08));
+  background: var(--bg-card, rgba(255, 255, 255, 0.02));
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.history-pagination-info {
+  font-size: 0.82rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.retention-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  color: var(--gold, #d4af37);
+  background: rgba(212, 175, 55, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.history-pagination-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-indicator {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary, #f8fafc);
+  padding: 0 4px;
+}
+
+.btn-log-expired {
+  color: #f59e0b !important;
+  opacity: 0.85;
+}
+
+.btn-log-expired:hover {
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+.badge-info {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 </style>
 

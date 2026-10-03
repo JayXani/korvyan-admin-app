@@ -186,7 +186,7 @@ export async function getDeployStatusViaWorker(deployId: string) {
   return res.data.deploy
 }
 
-export async function getDeployHistoryViaWorker(limit = 20) {
+export async function getDeployHistoryViaWorker(limit = 100) {
   const res = await workersApi.get('/api/deploy/history', { params: { limit } })
   return res.data.history || []
 }
