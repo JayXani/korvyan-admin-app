@@ -508,7 +508,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import {
   triggerDeployViaWorker,
   getDeployHistoryViaWorker,
@@ -521,6 +521,24 @@ import { useToast } from '@/composables/useToast'
 import { sendEmail } from '@/services/mail.service'
 
 const { success: toastSuccess, error: toastError, info: toastInfo } = useToast()
+
+const internalForm = reactive({
+  version: 'v2.4.0',
+  author: 'DevOps Team',
+  subject: '[Deploy] Notificação Técnica de Atualização',
+  services: ['Backend API', 'Frontend'],
+  commits: '- feat: novas funcionalidades no portal\n- fix: correções na sincronização\n- refactor: melhoria na performance',
+  notes: 'Serviços atualizados e validados com sucesso.',
+})
+
+const clientForm = reactive({
+  releaseTitle: 'Novidades & Melhorias na Plataforma',
+  version: 'v2.4',
+  subject: '🎉 Novidades e Atualizações no Sistema Korvyan',
+  features: '• Novo layout otimizado e mais rápido\n• Suporte completo a customização de branding\n• Central de notificações em tempo real',
+  fixes: '• Maior estabilidade na emissão e buscas\n• Correções gerais de usabilidade',
+  footerText: 'Nossa equipe continua trabalhando diariamente para oferecer a melhor experiência para sua operação.',
+})
 
 const selectedEnv = ref<'prod' | 'beta' | 'dev'>('prod')
 const notifyEmail = ref(true)
@@ -702,23 +720,6 @@ const serviceOptions = [
   { id: 'admin-app', name: 'Admin App' },
 ]
 
-const internalForm = ref({
-  version: 'v2.4.0',
-  author: 'DevOps Team',
-  subject: '[Deploy] Notificação Técnica de Atualização',
-  services: ['Backend API', 'Frontend'],
-  commits: '- feat: novas funcionalidades no portal\n- fix: correções na sincronização\n- refactor: melhoria na performance',
-  notes: 'Serviços atualizados e validados com sucesso.',
-})
-
-const clientForm = ref({
-  releaseTitle: 'Novidades & Melhorias na Plataforma',
-  version: 'v2.4',
-  subject: '🎉 Novidades e Atualizações no Sistema Korvyan',
-  features: '• Novo layout otimizado e mais rápido\n• Suporte completo a customização de branding\n• Central de notificações em tempo real',
-  fixes: '• Maior estabilidade na emissão e buscas\n• Correções gerais de usabilidade',
-  footerText: 'Nossa equipe continua trabalhando diariamente para oferecer a melhor experiência para sua operação.',
-})
 
 const parsedRecipients = computed(() => {
   if (!rawRecipients.value) return []
@@ -800,8 +801,8 @@ async function addTenantEmailsPreset() {
 
 const renderedEmailHtml = computed(() => {
   if (activeTemplateType.value === 'internal') {
-    const srvList = internalForm.value.services.map(s => `<li style="margin-bottom: 4px;"><strong>${s}</strong></li>`).join('')
-    const commitList = internalForm.value.commits
+    const srvList = (internalForm.services || []).map(s => `<li style="margin-bottom: 4px;"><strong>${s}</strong></li>`).join('')
+    const commitList = (internalForm.commits || '')
       .split('\n')
       .filter(c => c.trim())
       .map(c => `<li style="margin-bottom: 4px; font-family: monospace;">${c}</li>`)
@@ -811,27 +812,27 @@ const renderedEmailHtml = computed(() => {
       <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 24px; border-radius: 8px;">
         <div style="border-bottom: 2px solid #d4af37; padding-bottom: 12px; margin-bottom: 16px;">
           <h2 style="color: #d4af37; margin: 0 0 6px 0;">[DEPLOY] Notificação Técnica de Implantação</h2>
-          <span style="font-size: 13px; color: #94a3b8;">Ambiente: <strong>${selectedEnv.value.toUpperCase()}</strong> | Versão: <strong>${internalForm.value.version}</strong></span>
+          <span style="font-size: 13px; color: #94a3b8;">Ambiente: <strong>${selectedEnv.value.toUpperCase()}</strong> | Versão: <strong>${internalForm.version || ''}</strong></span>
         </div>
         <p style="margin: 0 0 12px 0;">Olá time,</p>
-        <p style="margin: 0 0 16px 0;">Um novo deploy foi executado com sucesso por <strong>${internalForm.value.author}</strong>.</p>
+        <p style="margin: 0 0 16px 0;">Um novo deploy foi executado com sucesso por <strong>${internalForm.author || ''}</strong>.</p>
         <h4 style="color: #60a5fa; margin: 16px 0 8px 0; text-transform: uppercase; font-size: 13px;">Serviços Atualizados:</h4>
         <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #cbd5e1;">${srvList || '<li>Nenhum serviço selecionado</li>'}</ul>
         <h4 style="color: #60a5fa; margin: 16px 0 8px 0; text-transform: uppercase; font-size: 13px;">Principais Alterações Técnicas:</h4>
         <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #e2e8f0;">${commitList || '<li>Sem notas de commits</li>'}</ul>
         <div style="background: rgba(255,255,255,0.05); padding: 12px; border-left: 3px solid #d4af37; margin-top: 16px; border-radius: 4px;">
-          <p style="margin: 0; font-size: 13px; color: #cbd5e1;"><strong>Observações:</strong> ${internalForm.value.notes || 'Operação finalizada sem anomalias.'}</p>
+          <p style="margin: 0; font-size: 13px; color: #cbd5e1;"><strong>Observações:</strong> ${internalForm.notes || 'Operação finalizada sem anomalias.'}</p>
         </div>
       </div>
     `
   } else {
-    const featList = clientForm.value.features
+    const featList = (clientForm.features || '')
       .split('\n')
       .filter(f => f.trim())
       .map(f => `<li style="margin-bottom: 6px;">${f}</li>`)
       .join('')
 
-    const fixList = clientForm.value.fixes
+    const fixList = (clientForm.fixes || '')
       .split('\n')
       .filter(f => f.trim())
       .map(f => `<li style="margin-bottom: 6px;">${f}</li>`)
@@ -840,8 +841,8 @@ const renderedEmailHtml = computed(() => {
     return `
       <div style="font-family: Arial, sans-serif; background-color: #ffffff; color: #1e293b; padding: 28px; border-radius: 8px; border: 1px solid #e2e8f0;">
         <div style="text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 16px; margin-bottom: 20px;">
-          <h2 style="color: #0f172a; margin: 0 0 6px 0;">${clientForm.value.releaseTitle}</h2>
-          <span style="display: inline-block; background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Versão ${clientForm.value.version}</span>
+          <h2 style="color: #0f172a; margin: 0 0 6px 0;">${clientForm.releaseTitle || ''}</h2>
+          <span style="display: inline-block; background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Versão ${clientForm.version || ''}</span>
         </div>
         <p style="font-size: 15px; line-height: 1.5; color: #334155;">Prezado cliente,</p>
         <p style="font-size: 14px; line-height: 1.6; color: #475569;">
@@ -856,7 +857,7 @@ const renderedEmailHtml = computed(() => {
           <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${fixList || '<li>Aprimoramentos de segurança e estabilidade.</li>'}</ul>
         </div>
         <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px; text-align: center; font-size: 13px; color: #64748b;">
-          <p style="margin: 0 0 6px 0;">${clientForm.value.footerText}</p>
+          <p style="margin: 0 0 6px 0;">${clientForm.footerText || ''}</p>
           <p style="margin: 0; font-weight: bold; color: #0f172a;">Equipe Korvyan</p>
         </div>
       </div>
@@ -871,8 +872,8 @@ async function handleSendCommunication() {
   }
 
   const subject = activeTemplateType.value === 'internal'
-    ? internalForm.value.subject || `[Deploy] Atualização em ${selectedEnv.value.toUpperCase()}`
-    : clientForm.value.subject || `Atualização de Plataforma Korvyan - ${clientForm.value.version}`
+    ? internalForm.subject || `[Deploy] Atualização em ${selectedEnv.value.toUpperCase()}`
+    : clientForm.subject || `Atualização de Plataforma Korvyan - ${clientForm.version}`
 
   sendingCommEmail.value = true
   try {
