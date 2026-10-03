@@ -42,100 +42,108 @@
     <div class="deploy-grid">
       <!-- 1. Backend -->
       <div class="deploy-card">
-        <div class="card-icon-wrapper bg-blue">
-          <i class="fas fa-server"></i>
+        <div class="card-top-row">
+          <div class="card-icon-wrapper bg-blue">
+            <i class="fas fa-server"></i>
+          </div>
+          <span class="service-status-pill">
+            <span class="status-dot"></span> Ativo
+          </span>
         </div>
         <div class="card-content">
-          <div class="card-header-row">
-            <h3>Backend API</h3>
-            <span class="badge badge-info">Django / Python</span>
-          </div>
+          <h3>Backend API</h3>
           <p class="card-desc">
-            Atualiza o <code>Korvyan-Insurance-Management</code>, executa migrações no PostgreSQL, sincroniza pacotes e reinicia o serviço Systemd.
+            Sincroniza o repositório da API, executa migrações no banco de dados e reinicia os serviços.
           </p>
         </div>
         <div class="card-footer">
           <button 
-            class="btn btn-outline w-100" 
+            class="btn btn-card-deploy w-100" 
             :disabled="isRunning" 
             @click="triggerDeploy('backend')"
           >
-            <i class="fas fa-play"></i> Deploy Backend
+            <i class="fas fa-play"></i> Atualizar Backend
           </button>
         </div>
       </div>
 
       <!-- 2. Frontend -->
       <div class="deploy-card">
-        <div class="card-icon-wrapper bg-emerald">
-          <i class="fas fa-globe"></i>
+        <div class="card-top-row">
+          <div class="card-icon-wrapper bg-emerald">
+            <i class="fas fa-globe"></i>
+          </div>
+          <span class="service-status-pill">
+            <span class="status-dot"></span> Ativo
+          </span>
         </div>
         <div class="card-content">
-          <div class="card-header-row">
-            <h3>Frontend Principal</h3>
-            <span class="badge badge-success">Portal Vue 3</span>
-          </div>
+          <h3>Frontend Principal</h3>
           <p class="card-desc">
-            Sincroniza o <code>korvyan-front</code>, instala dependências, compila os arquivos de produção do Vite e reinicia o Nginx.
+            Compila os módulos da aplicação web, atualiza o build e publica no servidor web.
           </p>
         </div>
         <div class="card-footer">
           <button 
-            class="btn btn-outline w-100" 
+            class="btn btn-card-deploy w-100" 
             :disabled="isRunning" 
             @click="triggerDeploy('front')"
           >
-            <i class="fas fa-play"></i> Deploy Frontend
+            <i class="fas fa-play"></i> Atualizar Frontend
           </button>
         </div>
       </div>
 
       <!-- 3. Workers -->
       <div class="deploy-card">
-        <div class="card-icon-wrapper bg-amber">
-          <i class="fas fa-bolt"></i>
+        <div class="card-top-row">
+          <div class="card-icon-wrapper bg-amber">
+            <i class="fas fa-bolt"></i>
+          </div>
+          <span class="service-status-pill">
+            <span class="status-dot"></span> Ativo
+          </span>
         </div>
         <div class="card-content">
-          <div class="card-header-row">
-            <h3>Korvyan Workers</h3>
-            <span class="badge badge-warning">Node.js / Functions</span>
-          </div>
+          <h3>Workers & Filas</h3>
           <p class="card-desc">
-            Atualiza o serviço de background workers, tarefas assíncronas, motor de e-mails Hostinger e Cloud Functions.
+            Atualiza serviços assíncronos, motor de envio de e-mails e automações da plataforma.
           </p>
         </div>
         <div class="card-footer">
           <button 
-            class="btn btn-outline w-100" 
+            class="btn btn-card-deploy w-100" 
             :disabled="isRunning" 
             @click="triggerDeploy('workers')"
           >
-            <i class="fas fa-play"></i> Deploy Workers
+            <i class="fas fa-play"></i> Atualizar Workers
           </button>
         </div>
       </div>
 
       <!-- 4. Admin App -->
       <div class="deploy-card">
-        <div class="card-icon-wrapper bg-purple">
-          <i class="fas fa-shield-halved"></i>
+        <div class="card-top-row">
+          <div class="card-icon-wrapper bg-purple">
+            <i class="fas fa-shield-halved"></i>
+          </div>
+          <span class="service-status-pill">
+            <span class="status-dot"></span> Ativo
+          </span>
         </div>
         <div class="card-content">
-          <div class="card-header-row">
-            <h3>Admin App</h3>
-            <span class="badge badge-purple">Painel Master Root</span>
-          </div>
+          <h3>Painel Master</h3>
           <p class="card-desc">
-            Compila este painel administrativo <code>korvyan-admin-app</code> e atualiza os arquivos estáticos servidos pelo servidor web.
+            Compila o painel administrativo Master e disponibiliza as novas ferramentas de gestão.
           </p>
         </div>
         <div class="card-footer">
           <button 
-            class="btn btn-outline w-100" 
+            class="btn btn-card-deploy w-100" 
             :disabled="isRunning" 
             @click="triggerDeploy('admin-app')"
           >
-            <i class="fas fa-play"></i> Deploy Admin App
+            <i class="fas fa-play"></i> Atualizar Painel Master
           </button>
         </div>
       </div>
@@ -151,8 +159,7 @@
           <h2>Pipeline Completo Unificado</h2>
           <p>
             Executa a esteira sequencial completa: 
-            <strong>Backend ➔ Workers ➔ Frontend ➔ Admin App</strong>.
-            Executa a esteira sequencial completa e envia notificação de status para a equipe.
+            <strong>Backend ➔ Workers ➔ Frontend ➔ Admin App</strong> com recarregamento seguro e notificação.
           </p>
         </div>
       </div>
@@ -213,44 +220,61 @@
       </div>
     </div>
 
-    <!-- Central de Comunicados: Templates de Deploy & Changelog -->
-    <div class="card deploy-comm-card" style="margin-top: 2rem;">
-      <div class="comm-header">
-        <div>
+    <!-- Central de Comunicados: Templates de Deploy & Changelog (Accordion) -->
+    <div class="card deploy-comm-card" :class="{ 'is-open': isCommOpen }" style="margin-top: 2rem;">
+      <div class="comm-accordion-header" @click="isCommOpen = !isCommOpen" role="button" tabindex="0">
+        <div class="comm-header-left">
           <div class="comm-title-row">
-            <h2 class="section-title">
-              <i class="fas fa-bullhorn text-gold" style="margin-right: 8px;"></i>
-              Central de Comunicados & Release Notes
-            </h2>
-            <span class="badge" :class="selectedEnv === 'prod' ? 'badge-gold' : selectedEnv === 'beta' ? 'badge-info' : 'badge-muted'">
-              {{ selectedEnv === 'prod' ? 'PRODUÇÃO' : selectedEnv === 'beta' ? 'BETA' : 'DEV' }}
-            </span>
+            <div class="comm-icon-box">
+              <i class="fas fa-bullhorn text-gold"></i>
+            </div>
+            <div>
+              <div class="comm-title-badges">
+                <h2 class="section-title">Central de Comunicados & Release Notes</h2>
+                <span class="badge" :class="selectedEnv === 'prod' ? 'badge-gold' : selectedEnv === 'beta' ? 'badge-info' : 'badge-muted'">
+                  {{ selectedEnv === 'prod' ? 'PRODUÇÃO' : selectedEnv === 'beta' ? 'BETA' : 'DEV' }}
+                </span>
+                <span class="badge-sub-pill">{{ activeTemplateType === 'internal' ? 'Deploy Interno' : 'Changelog Clientes' }}</span>
+              </div>
+              <p class="section-sub">
+                Gere e envie comunicados técnicos internos para a equipe ou notas de atualização (changelog) amigáveis para clientes.
+              </p>
+            </div>
           </div>
-          <p class="section-sub">
-            Gere e envie comunicados técnicos internos para a equipe ou notas de atualização (changelog) amigáveis para clientes.
-          </p>
         </div>
 
-        <!-- Seletor de Tipo de Template -->
-        <div class="template-type-toggle">
-          <button 
-            type="button" 
-            class="tpl-btn" 
-            :class="{ active: activeTemplateType === 'internal' }"
-            @click="activeTemplateType = 'internal'"
-          >
-            <i class="fas fa-code-merge"></i> Deploy Interno (DevOps)
-          </button>
-          <button 
-            type="button" 
-            class="tpl-btn client" 
-            :class="{ active: activeTemplateType === 'client' }"
-            @click="activeTemplateType = 'client'"
-          >
-            <i class="fas fa-sparkles"></i> Changelog para Clientes
+        <div class="comm-header-actions" @click.stop>
+          <!-- Seletor de Tipo de Template quando aberto -->
+          <div v-if="isCommOpen" class="template-type-toggle">
+            <button 
+              type="button" 
+              class="tpl-btn" 
+              :class="{ active: activeTemplateType === 'internal' }"
+              @click="activeTemplateType = 'internal'"
+            >
+              <i class="fas fa-code-merge"></i> Interno (DevOps)
+            </button>
+            <button 
+              type="button" 
+              class="tpl-btn client" 
+              :class="{ active: activeTemplateType === 'client' }"
+              @click="activeTemplateType = 'client'"
+            >
+              <i class="fas fa-sparkles"></i> Clientes
+            </button>
+          </div>
+
+          <!-- Botão Accordion Toggle -->
+          <button type="button" class="accordion-toggle-btn" @click="isCommOpen = !isCommOpen" :aria-expanded="isCommOpen">
+            <span>{{ isCommOpen ? 'Recolher' : 'Expandir' }}</span>
+            <i class="fas fa-chevron-down accordion-arrow" :class="{ 'rotated': isCommOpen }"></i>
           </button>
         </div>
       </div>
+
+      <!-- Conteúdo do Accordion com transição suave -->
+      <transition name="accordion-slide">
+        <div v-show="isCommOpen" class="comm-accordion-body">
 
       <!-- Grid: Formulário + Preview -->
       <div class="comm-grid">
@@ -429,6 +453,8 @@
         </div>
       </div>
     </div>
+  </transition>
+</div>
 
     <!-- Tabela de Histórico de Deploys -->
     <div class="card history-card" style="margin-top: 2rem;">
@@ -541,6 +567,7 @@ const clientForm = reactive({
 })
 
 const selectedEnv = ref<'prod' | 'beta' | 'dev'>('prod')
+const isCommOpen = ref(false)
 const notifyEmail = ref(true)
 const isRunning = ref(false)
 const testingConnection = ref(false)
@@ -1048,19 +1075,39 @@ onUnmounted(() => {
 .badge-warning { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
 .badge-purple { background: rgba(139, 92, 246, 0.15); color: #a78bfa; }
 
-.card-header-row {
+.card-top-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
-  gap: 8px;
+  margin-bottom: 0.85rem;
 }
 
-.card-header-row h3 {
+.service-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 3px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+}
+
+.deploy-card .card-content h3 {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
+  color: var(--text-primary, #ffffff);
+  margin: 0 0 0.45rem 0;
 }
 
 .card-desc {
@@ -1071,15 +1118,37 @@ onUnmounted(() => {
   flex: 1;
 }
 
-.card-desc code {
-  background: var(--bg-surface);
-  color: var(--gold);
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
 .card-footer {
   margin-top: auto;
+}
+
+.btn-card-deploy {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary, #f8fafc);
+  padding: 9px 16px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-card-deploy:hover:not(:disabled) {
+  background: var(--gold, #d4af37);
+  border-color: var(--gold, #d4af37);
+  color: #1a1a1a;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-card-deploy:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .w-100 { width: 100%; }
@@ -1419,40 +1488,138 @@ onUnmounted(() => {
     padding: 1.15rem;
   }
 }
-</style>
 
-
-
-
-/* ─── Central de Comunicados & Changelog ─── */
+/* ─── Central de Comunicados & Changelog (Accordion) ─── */
 .deploy-comm-card {
   background: var(--bg-card, #18181b);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  border-radius: 12px;
-  padding: 1.75rem;
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.comm-header {
+.deploy-comm-card.is-open {
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.comm-accordion-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   flex-wrap: wrap;
   gap: 1.25rem;
-  margin-bottom: 1.5rem;
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 1.5rem 1.75rem;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.015);
+  transition: background 0.2s;
+}
+
+.comm-accordion-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.comm-header-left {
+  flex: 1 1 500px;
 }
 
 .comm-title-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.comm-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(212, 175, 55, 0.15);
+  color: var(--gold, #d4af37);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(212, 175, 55, 0.25);
+}
+
+.comm-title-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.comm-title-badges h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary, #ffffff);
+}
+
+.badge-sub-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary, #94a3b8);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.comm-header-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
 }
 
-.comm-title-row h2 {
-  margin: 0;
-  font-size: 1.25rem;
+.accordion-toggle-btn {
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: var(--gold, #d4af37);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.25s;
+}
+
+.accordion-toggle-btn:hover {
+  background: var(--gold, #d4af37);
+  color: #1a1a1a;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+}
+
+.accordion-arrow {
+  font-size: 0.75rem;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.comm-accordion-body {
+  padding: 1.5rem 1.75rem 1.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.accordion-slide-enter-active,
+.accordion-slide-leave-active {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.accordion-slide-enter-from,
+.accordion-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 .template-type-toggle {
@@ -1718,3 +1885,5 @@ onUnmounted(() => {
   overflow-y: auto;
   box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
 }
+</style>
+
