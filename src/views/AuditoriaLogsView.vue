@@ -361,6 +361,10 @@ async function loadLogs() {
         ...l,
         username: l.username || 'Sistema',
       }
+    }).sort((a, b) => {
+      const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
+      const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
+      return timeB - timeA
     })
   } catch (e: any) {
     toastError(e.message || 'Ocorreu um erro ao buscar os logs.')
@@ -410,7 +414,11 @@ const filteredLogs = computed(() => {
       return true
     })
   }
-  return result
+  return [...result].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0
+    return timeB - timeA
+  })
 })
 
 const totalPages  = computed(() => Math.max(1, Math.ceil(filteredLogs.value.length / PAGE_SIZE)))
