@@ -32,9 +32,9 @@
             <i class="fas fa-server"></i> API e Integração
           </button>
           <div class="divider"></div>
-          <p class="section-title">TEMPLATES DE E-MAIL</p>
+          <p class="section-title"><i class="fas fa-cubes text-gold" style="margin-right:6px"></i>E-MAILS DO SISTEMA</p>
           <div 
-            v-for="t in templates" 
+            v-for="t in systemTemplates" 
             :key="t.id" 
             class="nav-pill template-pill" 
             :class="{ 'active': activeTab === 'templates' && selectedTemplate?.id === t.id }"
@@ -44,7 +44,23 @@
               <span class="pill-name">{{ t.name }}</span>
               <span class="pill-trigger">{{ t.trigger }}</span>
             </div>
-            <i class="fas fa-chevron-right icon-right"></i>
+            <span :class="['status-dot', t.enabled ? 'dot-active' : 'dot-inactive']" :title="t.enabled ? 'Template Ativo' : 'Template Inativo'"></span>
+          </div>
+
+          <div class="divider"></div>
+          <p class="section-title"><i class="fas fa-user-gear text-gold" style="margin-right:6px"></i>E-MAILS DO USUÁRIO</p>
+          <div 
+            v-for="t in userTemplates" 
+            :key="t.id" 
+            class="nav-pill template-pill" 
+            :class="{ 'active': activeTab === 'templates' && selectedTemplate?.id === t.id }"
+            @click="selectTemplate(t)"
+          >
+            <div class="pill-content">
+              <span class="pill-name">{{ t.name }}</span>
+              <span class="pill-trigger">{{ t.trigger }}</span>
+            </div>
+            <span :class="['status-dot', t.enabled ? 'dot-active' : 'dot-inactive']" :title="t.enabled ? 'Template Ativo' : 'Template Inativo'"></span>
           </div>
         </div>
       </div>
@@ -102,8 +118,16 @@
           <div class="card-header-styled">
             <div class="icon-circle bg-purple"><i class="fas fa-pen-nib"></i></div>
             <div class="header-text">
-              <h2>{{ selectedTemplate.name }}</h2>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <h2>{{ selectedTemplate.name }}</h2>
+                <span :class="['badge-category', selectedTemplate.category === 'usuario' ? 'badge-user' : 'badge-system']">
+                  {{ selectedTemplate.category === 'usuario' ? 'NOTIFICAÇÃO DO USUÁRIO' : 'SISTEMA' }}
+                </span>
+              </div>
               <p>Gatilho: {{ selectedTemplate.trigger }}</p>
+              <small v-if="selectedTemplate.category === 'usuario' && selectedTemplate.preferenceKey" style="color:var(--text-muted); font-size:0.75rem; display:block; margin-top:2px;">
+                <i class="fas fa-sliders text-gold"></i> Vinculado à preferência de notificação do usuário ({{ selectedTemplate.preferenceKey }})
+              </small>
             </div>
             
             <!-- Toggle Ativo -->
@@ -218,69 +242,220 @@ interface EmailTemplate {
   html: string
   vars: string[]
   enabled: boolean
+  category: 'sistema' | 'usuario'
+  preferenceKey?: string
 }
 
-// 10 Templates Iniciais
 const defaultTemplates: EmailTemplate[] = [
+  // ─── E-MAILS DO SISTEMA ───────────────────────────────────────────────────
   { 
-    id: 'recuperar_senha', name: 'Recuperar Senha', subject: 'Instruções para redefinir sua senha', trigger: 'Manual/API', 
-    vars: ['{{ name }}', '{{ link }}'], enabled: true,
-    html: `<div style="text-align:center; padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Recebemos uma solicitação para redefinir a sua senha.</p>\n  <a href="{{ link }}" style="display:inline-block; padding:10px 20px; background:#8b5cf6; color:#fff; text-decoration:none; border-radius:4px;">Redefinir Senha</a>\n</div>`
-  },
-  { 
-    id: 'novo_acesso', name: 'Novo Acesso (Boas-vindas)', subject: 'Bem-vindo ao portal Korvyan', trigger: 'Criação de Usuário (Admin)',
-    vars: ['{{ name }}', '{{ login }}', '{{ password }}'], enabled: true,
+    id: 'novo_acesso', 
+    name: 'Novo Acesso (Boas-vindas)', 
+    subject: 'Bem-vindo ao portal Korvyan', 
+    trigger: 'Criação de Usuário (Admin)',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ login }}', '{{ password }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Bem-vindo, {{ name }}!</h2>\n  <p>Sua conta foi criada com sucesso.</p>\n  <p><strong>Login:</strong> {{ login }}<br><strong>Senha temporária:</strong> {{ password }}</p>\n</div>`
   },
   { 
-    id: 'aviso_login', name: 'Alerta de Novo Login', subject: 'Novo acesso identificado na sua conta', trigger: 'Autenticação no Portal',
-    vars: ['{{ name }}', '{{ login }}', '{{ date }}'], enabled: false,
-    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}!</h2>\n  <p>Identificamos um novo acesso à sua conta no sistema.</p>\n  <p><strong>Login:</strong> {{ login }}<br><strong>Data/Hora:</strong> {{ date }}</p>\n  <p>Se você reconhece esse acesso, nenhuma ação é necessária.</p>\n</div>`
+    id: 'recuperar_senha', 
+    name: 'Recuperar Senha', 
+    subject: 'Instruções para redefinir sua senha', 
+    trigger: 'Manual / API',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ link }}'], 
+    enabled: true,
+    html: `<div style="text-align:center; padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Recebemos uma solicitação para redefinir a sua senha.</p>\n  <a href="{{ link }}" style="display:inline-block; padding:10px 20px; background:#8b5cf6; color:#fff; text-decoration:none; border-radius:4px;">Redefinir Senha</a>\n</div>`
   },
   { 
-    id: 'fatura_gerada', name: 'Boleto/Fatura', subject: 'Seu boleto Korvyan chegou', trigger: 'Faturamento Mensal',
-    vars: ['{{ name }}', '{{ amount }}', '{{ due_date }}', '{{ barcode }}'], enabled: true,
+    id: 'fatura_gerada', 
+    name: 'Boleto / Fatura', 
+    subject: 'Seu boleto Korvyan chegou', 
+    trigger: 'Faturamento Mensal',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ amount }}', '{{ due_date }}', '{{ barcode }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Seu boleto no valor de <strong>R$ {{ amount }}</strong> com vencimento para <strong>{{ due_date }}</strong> está disponível.</p>\n  <p>Linha digitável: <code>{{ barcode }}</code></p>\n</div>`
   },
   { 
-    id: 'fatura_atrasada', name: 'Cobrança Atrasada', subject: 'Aviso: Boleto em atraso', trigger: 'Rotina Inadimplência',
-    vars: ['{{ name }}', '{{ amount }}', '{{ due_date }}', '{{ barcode }}', '{{ days_late }}'], enabled: true,
+    id: 'fatura_atrasada', 
+    name: 'Cobrança Atrasada', 
+    subject: 'Aviso: Boleto em atraso', 
+    trigger: 'Rotina de Inadimplência',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ amount }}', '{{ due_date }}', '{{ barcode }}', '{{ days_late }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Identificamos que a sua fatura de <strong>R$ {{ amount }}</strong> vencida em <strong>{{ due_date }}</strong> (há {{ days_late }} dias) ainda não consta como paga no nosso sistema.</p>\n  <p>Para regularizar, utilize a linha digitável: <code>{{ barcode }}</code></p>\n  <p>Caso já tenha efetuado o pagamento, desconsidere este e-mail.</p>\n</div>`
   },
   { 
-    id: 'pagamento_confirmado', name: 'Pagamento Confirmado', subject: 'Recebemos o seu pagamento!', trigger: 'Baixa de Fatura',
-    vars: ['{{ name }}', '{{ amount }}', '{{ ref_month }}'], enabled: true,
+    id: 'pagamento_confirmado', 
+    name: 'Pagamento Confirmado', 
+    subject: 'Recebemos o seu pagamento!', 
+    trigger: 'Baixa de Fatura',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ amount }}', '{{ ref_month }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Passando para confirmar que o pagamento no valor de <strong>R$ {{ amount }}</strong> referente a <strong>{{ ref_month }}</strong> foi processado com sucesso!</p>\n  <p>Agradecemos a sua parceria.</p>\n</div>`
   },
   { 
-    id: 'boas_vindas', name: 'Boas-vindas', subject: 'Bem-vindo ao seu plano!', trigger: 'Contrato Assinado',
-    vars: ['{{ name }}', '{{ plan_name }}'], enabled: true,
+    id: 'boas_vindas', 
+    name: 'Boas-vindas ao Plano', 
+    subject: 'Bem-vindo ao seu plano!', 
+    trigger: 'Contrato Assinado',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ plan_name }}'], 
+    enabled: true,
     html: `<div style="padding: 20px; text-align: center;">\n  <h2>Tudo pronto, {{ name }}!</h2>\n  <p>É com muita alegria que damos as boas-vindas. Seu plano <strong>{{ plan_name }}</strong> já está ativo e pronto para uso.</p>\n  <p>Se tiver qualquer dúvida, conte com nosso suporte!</p>\n</div>`
   },
   { 
-    id: 'renovacao_contrato', name: 'Renovação de Contrato', subject: 'Seu contrato será renovado em breve', trigger: 'Expiração',
-    vars: ['{{ name }}', '{{ plan_name }}', '{{ expiration_date }}'], enabled: true,
+    id: 'renovacao_contrato', 
+    name: 'Renovação de Contrato', 
+    subject: 'Seu contrato será renovado em breve', 
+    trigger: 'Expiração de Vigência',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ plan_name }}', '{{ expiration_date }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>O seu plano <strong>{{ plan_name }}</strong> vence no dia <strong>{{ expiration_date }}</strong> e está programado para renovação.</p>\n  <p>Se precisar fazer alguma alteração, entre em contato conosco.</p>\n</div>`
   },
   { 
-    id: 'cancelamento_contrato', name: 'Cancelamento Confirmado', subject: 'Confirmação de Cancelamento', trigger: 'Churn',
-    vars: ['{{ name }}', '{{ plan_name }}'], enabled: true,
+    id: 'cancelamento_contrato', 
+    name: 'Cancelamento de Contrato', 
+    subject: 'Confirmação de Cancelamento', 
+    trigger: 'Rescisão Contratual',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ plan_name }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Confirmamos o cancelamento do plano <strong>{{ plan_name }}</strong>.</p>\n  <p>Lamentamos ver você partir, e nossas portas estarão sempre abertas caso decida voltar!</p>\n</div>`
   },
   { 
-    id: 'novo_chamado', name: 'Novo Chamado de Suporte', subject: 'Recebemos seu chamado #{{ ticket_id }}', trigger: 'Ticket Aberto',
-    vars: ['{{ name }}', '{{ ticket_id }}', '{{ title }}'], enabled: true,
+    id: 'lembrete_cobranca', 
+    name: 'Lembrete de Cobrança', 
+    subject: 'Lembrete: Seu boleto vence em breve', 
+    trigger: 'Pré-vencimento',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ amount }}', '{{ due_date }}'], 
+    enabled: true,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Lembramos que o seu boleto de <strong>R$ {{ amount }}</strong> vencerá em <strong>{{ due_date }}</strong>.</p>\n  <p>Mantenha seus pagamentos em dia para usufruir de todos os benefícios sem interrupção.</p>\n</div>`
+  },
+  { 
+    id: 'reajuste_anual', 
+    name: 'Reajuste Anual', 
+    subject: 'Comunicado: Reajuste anual do seu contrato', 
+    trigger: 'Aniversário Contratual',
+    category: 'sistema',
+    vars: ['{{ name }}', '{{ percent }}', '{{ new_amount }}'], 
+    enabled: true,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Informamos a aplicação do reajuste anual de <strong>{{ percent }}%</strong> no seu plano. O novo valor mensal será de <strong>R$ {{ new_amount }}</strong>.</p>\n</div>`
+  },
+
+  // ─── E-MAILS DO USUÁRIO (NOTIFICAÇÕES & PREFERÊNCIAS) ────────────────────
+  { 
+    id: 'aviso_login', 
+    name: 'Login em Novo Dispositivo', 
+    subject: 'Alerta de Acesso: Novo login na sua conta', 
+    trigger: 'Autenticação no Portal',
+    category: 'usuario',
+    preferenceKey: 'new_device_login',
+    vars: ['{{ name }}', '{{ login }}', '{{ date }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}!</h2>\n  <p>Identificamos um novo login com o usuário <strong>{{ login }}</strong> em {{ date }}.</p>\n  <p>Se foi você, nenhuma ação é necessária. Caso não reconheça este acesso, redefina sua senha imediatamente.</p>\n</div>`
+  },
+  { 
+    id: 'alerta_seguranca', 
+    name: 'Alerta de Segurança', 
+    subject: 'Aviso de Segurança Korvyan', 
+    trigger: 'Atividade Suspeita / Bloqueio',
+    category: 'usuario',
+    preferenceKey: 'security_alert',
+    vars: ['{{ name }}', '{{ details }}', '{{ date }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Identificamos uma alteração de segurança relevante na sua conta: <strong>{{ details }}</strong> em {{ date }}.</p>\n</div>`
+  },
+  { 
+    id: 'alteracao_perfil', 
+    name: 'Alteração de Perfil', 
+    subject: 'Seus dados de perfil foram alterados', 
+    trigger: 'Edição de Dados / Senha',
+    category: 'usuario',
+    preferenceKey: 'profile_update',
+    vars: ['{{ name }}', '{{ date }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Os dados do seu cadastro foram atualizados com sucesso em {{ date }}.</p>\n</div>`
+  },
+  { 
+    id: 'novo_chamado', 
+    name: 'Novo Chamado de Suporte', 
+    subject: 'Recebemos seu chamado #{{ ticket_id }}', 
+    trigger: 'Ticket Aberto',
+    category: 'usuario',
+    preferenceKey: 'ticket_updates',
+    vars: ['{{ name }}', '{{ ticket_id }}', '{{ title }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Seu chamado <strong>#{{ ticket_id }} - {{ title }}</strong> foi registrado com sucesso.</p>\n  <p>Nossa equipe já foi notificada e responderá o mais breve possível!</p>\n</div>`
   },
   { 
-    id: 'atualizacao_chamado', name: 'Atualização no Chamado', subject: 'Atualização no chamado #{{ ticket_id }}', trigger: 'Ticket Respondido',
-    vars: ['{{ name }}', '{{ ticket_id }}', '{{ status }}'], enabled: true,
+    id: 'atualizacao_chamado', 
+    name: 'Atualização no Chamado', 
+    subject: 'Atualização no chamado #{{ ticket_id }}', 
+    trigger: 'Ticket Respondido',
+    category: 'usuario',
+    preferenceKey: 'ticket_updates',
+    vars: ['{{ name }}', '{{ ticket_id }}', '{{ status }}'], 
+    enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>O seu chamado de suporte <strong>#{{ ticket_id }}</strong> teve uma nova atualização.</p>\n  <p>Status atual: <strong>{{ status }}</strong></p>\n  <p>Acesse o portal para conferir a resposta.</p>\n</div>`
+  },
+  { 
+    id: 'relatorio_disponivel', 
+    name: 'Relatório Disponível', 
+    subject: 'Seu relatório está pronto para download', 
+    trigger: 'Geração Concluída',
+    category: 'usuario',
+    preferenceKey: 'report_available',
+    vars: ['{{ name }}', '{{ report_name }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>O relatório <strong>{{ report_name }}</strong> foi gerado e já está disponível para visualização e download no portal.</p>\n</div>`
+  },
+  { 
+    id: 'novo_solicitante', 
+    name: 'Novo Solicitante', 
+    subject: 'Novo solicitante registrado no sistema', 
+    trigger: 'Cadastro de Solicitante',
+    category: 'usuario',
+    preferenceKey: 'new_requester',
+    vars: ['{{ name }}', '{{ requester_name }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Um novo solicitante (<strong>{{ requester_name }}</strong>) foi adicionado à sua base de atendimento.</p>\n</div>`
+  },
+  { 
+    id: 'novo_documento', 
+    name: 'Novo Documento Anexado', 
+    subject: 'Novo documento anexado ao contrato', 
+    trigger: 'Upload de Arquivo',
+    category: 'usuario',
+    preferenceKey: 'new_document',
+    vars: ['{{ name }}', '{{ doc_name }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Um novo documento (<strong>{{ doc_name }}</strong>) foi anexado ao seu registro.</p>\n</div>`
+  },
+  { 
+    id: 'manutencao_sistema', 
+    name: 'Manutenção do Sistema', 
+    subject: 'Comunicado de Manutenção Programada', 
+    trigger: 'Aviso Global',
+    category: 'usuario',
+    preferenceKey: 'system_maintenance',
+    vars: ['{{ name }}', '{{ date }}', '{{ duration }}'], 
+    enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Informamos que realizaremos uma janela de manutenção preventiva no sistema no dia <strong>{{ date }}</strong> com duração prevista de <strong>{{ duration }}</strong>.</p>\n</div>`
   }
 ]
 
 const templates = ref<EmailTemplate[]>([])
 const selectedTemplate = ref<EmailTemplate | null>(null)
+
+const systemTemplates = computed(() => templates.value.filter(t => t.category === 'sistema' || !t.category))
+const userTemplates = computed(() => templates.value.filter(t => t.category === 'usuario'))
 
 const showPreview = ref(false)
 const previewHtml = computed(() => {
@@ -327,7 +502,7 @@ async function onTenantChange() {
     const loadedTemplates = await getEmailTemplatesViaWorker(selectedTenantId.value) || []
     templates.value = defaultTemplates.map(dt => {
       const existing = loadedTemplates.find((lt: any) => lt.id === dt.id)
-      return existing ? existing : dt
+      return existing ? { ...dt, ...existing } : dt
     })
   } catch (err: any) {
     emailConfig.value = { apiToken: '', mailboxId: '', fromEmail: '', fromName: '' }
@@ -463,6 +638,15 @@ async function sendTest() {
 .pill-name { font-size: 0.9rem; font-weight: 700; }
 .pill-trigger { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
 .template-pill.active .pill-trigger { color: var(--primary); opacity: 0.8; }
+
+/* Status Dot e Badges */
+.status-dot { width: 9px; height: 9px; border-radius: 50%; margin-left: auto; flex-shrink: 0; }
+.dot-active { background: #10b981; box-shadow: 0 0 6px rgba(16, 185, 129, 0.6); }
+.dot-inactive { background: #6b7280; opacity: 0.45; }
+
+.badge-category { font-size: 0.65rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+.badge-system { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+.badge-user { background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
 
 /* Main Area Cards */
 .card-header-styled {
