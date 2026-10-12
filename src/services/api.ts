@@ -17,7 +17,15 @@ import axios, { type AxiosResponse } from 'axios'
 
 export function getBaseUrl(): string {
   const host = window.location.hostname
-  if (host === 'localhost' || host === '127.0.0.1' || host === 'korvyan-front.web.app' || host === 'mundial-golden.web.app' || host === 'korvyan-50830.web.app' || host === 'korvyan-50830.firebaseapp.com') {
+  // Em localhost / 127.0.0.1, usamos rota relativa '' para passar pelo proxy do Vite.
+  // Isso resolve 100% dos bloqueios de CORS e cookies HttpOnly (Lax/Secure) entre o frontend e backend.
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return ''
+  }
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')
+  }
+  if (host === 'korvyan-front.web.app' || host === 'mundial-golden.web.app' || host === 'korvyan-50830.web.app' || host === 'korvyan-50830.firebaseapp.com') {
     return 'https://korvy.korvyan.com' // Master API para ambiente de dev local ou firebase host
   }
   // Em produção, a requisição é direcionada para o próprio subdomínio do tenant
@@ -324,13 +332,23 @@ const ERROR_TRANSLATIONS: Record<string, string> = {
   'string does not match regex': 'Formato inválido',
   'ensure this value has at least': 'Tamanho mínimo não atingido',
   'ensure this value has at most': 'Tamanho máximo excedido',
+  'account_provider_denied': 'O provedor de login local (usuário/senha) não está habilitado para esta conta. Verifique o método de autenticação.',
+  'the provider local is not enabled': 'O provedor de login local (usuário e senha) não está habilitado para esta conta. Solicite a liberação no painel master.',
+  'the provider google is not enabled': 'O provedor Google não está habilitado para esta conta.',
+  'user_not_founded': 'Usuário não encontrado.',
+  'authentication_failed': 'Usuário ou senha incorretos.',
+  'access_denied': 'Acesso negado. Usuário inativo ou sem permissão.',
+  'session_expired': 'Sessão expirada. Por favor, realize login novamente.',
+  'token_not_founded': 'Token de sessão não encontrado.',
+  'tenant_not_founded': 'Empresa/Tenant não encontrado.',
+  'tenant_not_enabled': 'Empresa/Tenant desabilitado.',
 }
 
 export function translateErrorMessage(msg: string): string {
   if (!msg || typeof msg !== 'string') return String(msg || '')
   let translated = msg.trim()
   for (const [en, pt] of Object.entries(ERROR_TRANSLATIONS)) {
-    if (translated.toLowerCase().includes(en)) {
+    if (translated.toLowerCase().includes(en.toLowerCase())) {
       translated = translated.replace(new RegExp(en, 'gi'), pt)
     }
   }
@@ -383,19 +401,23 @@ function handleAxiosSuccess<T>(res: AxiosResponse, path: string, method: string,
   if (res.data && typeof res.data === 'object' && 'success' in res.data) {
     // Backend retornou HTTP 200 mas com success: false — tratar como erro
     if (res.data.success === false) {
-      const errPayload = res.data.error
+      const errPayload = (res.data.error && typeof res.data.error === 'object')
+        ? res.data.error
+        : (res.data.exception_info && typeof res.data.exception_info === 'object')
+          ? res.data.exception_info
+          : res.data
       let msg = 'Operação falhou no servidor.'
-      let errCode = null
-      let details = null
-      if (errPayload && typeof errPayload === 'object') {
-        errCode = errPayload.err_code || null
-        details = errPayload.details || null
-        if (details) {
-          const formatted = formatValidationDetails(details)
-          if (formatted) msg = formatted
-        } else if (errPayload.message) {
-          msg = translateErrorMessage(errPayload.message)
-        }
+      let errCode = errPayload.err_code || errPayload.code || null
+      let details = errPayload.details || errPayload.detail || null
+
+      if (details) {
+        msg = formatValidationDetails(details)
+      } else if (errPayload.message) {
+        msg = translateErrorMessage(errPayload.message)
+      } else if (errCode) {
+        msg = translateErrorMessage(String(errCode))
+      } else if (res.data.message) {
+        msg = translateErrorMessage(res.data.message)
       }
       trackRequest(path, method, res.status, duration_ms, false, msg)
       throw new ApiError(res.status, msg, res.data, errCode, details)
@@ -412,39 +434,39 @@ async function handleAxiosError(err: unknown, path: string, method: string, t0: 
     const res = err.response
     const payload = res.data
     
-    // Tratamento para o envelope de erro padronizado do backend: { success: false, error: { ... } }
+    // Tratamento para o envelope de erro padronizado do backend
     let errCode = null
     let details = null
     let msg = `Erro ${res.status}: ${res.statusText}`
 
-    if (res.status === 401) {
+    const isAuthRoute = path.includes('/auth/')
+    if (res.status === 401 && !isAuthRoute) {
       localStorage.removeItem('user_info')
       sessionStorage.removeItem('user_info')
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
+      const isLogin = window.location.pathname.endsWith('/login')
+      if (!isLogin) {
+        window.location.href = '/backoffice/login'
       }
     }
 
     if (payload && typeof payload === 'object') {
-      if (payload.error && typeof payload.error === 'object') {
-        errCode = payload.error.err_code || null
-        details = payload.error.details || null
-        
-        // Formatar mensagem baseada nos details
-        if (details) {
-          msg = formatValidationDetails(details)
-        } else if (payload.error.message) {
-          msg = translateErrorMessage(payload.error.message)
-        }
-      } else {
-        // Fallback antigo
-        errCode = payload.error?.err_code || payload.error?.code || null
-        details = payload.error?.details || payload.error?.detail || null
-        if (details) {
-          msg = formatValidationDetails(details)
-        } else if (payload.detail || payload.message) {
-          msg = translateErrorMessage(payload.detail || payload.message)
-        }
+      const errObj = (payload.error && typeof payload.error === 'object')
+        ? payload.error
+        : (payload.exception_info && typeof payload.exception_info === 'object')
+          ? payload.exception_info
+          : payload
+
+      errCode = errObj.err_code || errObj.code || payload.err_code || payload.code || null
+      details = errObj.details || errObj.detail || payload.details || payload.detail || null
+
+      if (details) {
+        msg = formatValidationDetails(details)
+      } else if (errObj.message) {
+        msg = translateErrorMessage(errObj.message)
+      } else if (errCode) {
+        msg = translateErrorMessage(String(errCode))
+      } else if (payload.message) {
+        msg = translateErrorMessage(payload.message)
       }
     }
 
