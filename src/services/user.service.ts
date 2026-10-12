@@ -134,8 +134,19 @@ function unwrap<T>(res: any): PaginatedResult<T> {
     else if (typeof res.total === 'number') total = res.total
     else total = data.length
   }
-  return { data, total }
+
+  const normalizedData = (data as any[]).map(item => {
+    if (item && typeof item === 'object') {
+      if (item.accounts && Array.isArray(item.accounts)) {
+        item.enable_google_auth = item.accounts.some((a: any) => a.provider === 'google' && a.account_is_active)
+      }
+    }
+    return item
+  })
+
+  return { data: normalizedData as T[], total }
 }
+
 
 export interface GetAllOperatorsPayload {
   columns?: Record<string, any>
@@ -213,8 +224,17 @@ export async function getAllOperators(payload: GetAllOperatorsPayload = {
   offset: 0,
 }): Promise<PaginatedResult<User>> {
   const normalizedFilters = normalizeFilters(payload.filters)
+  const columnsToUse = payload.columns ? JSON.parse(JSON.stringify(payload.columns)) : { id: true }
+  
+  if (columnsToUse.enable_google_auth !== undefined) {
+    delete columnsToUse.enable_google_auth
+    if (!columnsToUse.accounts) {
+      columnsToUse.accounts = { id: true, provider: true, account_is_active: true }
+    }
+  }
+
   const body: any = {
-    columns: payload.columns || { id: true },
+    columns: columnsToUse,
     filters: Object.keys(normalizedFilters).length > 0 ? normalizedFilters : {},
     offset: payload.offset ?? 0,
     limit: 100
@@ -225,12 +245,23 @@ export async function getAllOperators(payload: GetAllOperatorsPayload = {
 
 /** Criar novo operador */
 export function createOperator(payload: CreateOperatorPayload): Promise<User> {
-  return apiPost<User>('/v1/operator/', payload)
+  const p = { ...payload } as any
+  if (p.enable_google_auth !== undefined) delete p.enable_google_auth
+  return apiPost<User>('/v1/operator/', p)
 }
 
 /** Atualizar operador específico por ID */
 export function updateOperator(id: string, payload: UpdateOperatorPayload): Promise<User> {
-  return apiPatch<User>(`/v1/operator/${id}`, payload)
+  const p = { ...payload } as any
+  if (p.enable_google_auth !== undefined) {
+    if (!p.accounts) {
+      p.accounts = [
+        { provider: 'google', account_is_active: !!p.enable_google_auth }
+      ]
+    }
+    delete p.enable_google_auth
+  }
+  return apiPatch<User>(`/v1/operator/${id}`, p)
 }
 
 /**
@@ -243,9 +274,12 @@ export function setUserLoginAccess(
 ): Promise<User> {
   return updateOperator(id, {
     is_active: isActive,
-    enable_google_auth: enableGoogleAuth
-  })
+    accounts: [
+      { provider: 'google', account_is_active: enableGoogleAuth }
+    ]
+  } as any)
 }
+
 
 /** Deletar operadores por IDs */
 export async function deleteOperators(ids: string[]): Promise<unknown> {
