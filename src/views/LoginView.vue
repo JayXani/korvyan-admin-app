@@ -66,11 +66,9 @@ const loading = ref(false)
 const errorMsg = ref('')
 
 onMounted(() => {
-  if (!isKorvyTenantHost()) {
-    const host = window.location.hostname
-    window.location.href = `https://${host}/dashboard`
-  }
+  // Inicialização da tela de login do Backoffice
 })
+
 
 async function handleLogin() {
   loading.value = true

@@ -41,12 +41,11 @@ const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  // 1. Verificação estrita de Tenant: O Backoffice só existe sob o tenant Korvy
+  // 1. Verificação de Tenant
   if (!isKorvyTenantHost()) {
-    const host = window.location.hostname
-    window.location.href = `https://${host}/dashboard`
-    return false
+    return { name: 'login' }
   }
+
 
   // 2. Verificação de sessão e privilégios Master
   const rawUser = localStorage.getItem('user_info') || sessionStorage.getItem('user_info')

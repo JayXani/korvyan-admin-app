@@ -11,13 +11,16 @@
 export function isKorvyTenantHost(): boolean {
   const host = window.location.hostname
   return (
-    host === 'korvy.korvyan.com' ||
+    host.endsWith('korvyan.com') ||
     host === 'korvyan.com' ||
-    host === 'www.korvyan.com' ||
     host === 'localhost' ||
-    host === '127.0.0.1'
+    host === '127.0.0.1' ||
+    host.includes('web.app') ||
+    host.includes('firebaseapp.com') ||
+    host === '72.61.133.228'
   )
 }
+
 
 export function isMasterUser(user: any): boolean {
   if (!user) return false
