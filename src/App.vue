@@ -20,16 +20,24 @@ useTheme()
    DARK THEME (default)
 ────────────────────────────── */
 :root, [data-theme="dark"] {
-  --bg-base: #1a1a1a;
-  --bg-surface: #232323;
-  --bg-card: #252525;
-  --bg-card-hover: #2d2d2d;
-  --bg-input: #1e1e1e;
-  --border: #383838;
-  --border-light: #2c2c2c;
-  --text-primary: #e8e8e8;
-  --text-secondary: #999;
-  --text-muted: #666;
+  --bg-bo: #0f172a;
+  --bg-bo-card: #1e293b;
+  --border-bo: #334155;
+  --text-bo: #f8fafc;
+  --text-bo-muted: #94a3b8;
+  --master-brand: #8b5cf6;
+  --master-hover: #7c3aed;
+
+  --bg-base: #0f172a;
+  --bg-surface: var(--bg-bo-card, #1e293b);
+  --bg-card: var(--bg-bo-card, #1e293b);
+  --bg-card-hover: #334155;
+  --bg-input: #0f172a;
+  --border: #334155;
+  --border-light: #334155;
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
   --gold: #D4AF37;
   --gold-hover: #b8942e;
   --gold-light: rgba(212, 175, 55, 0.12);
@@ -43,17 +51,17 @@ useTheme()
   --shadow: 0 4px 16px rgba(0,0,0,0.4);
 
   /* Auth page specific — Premium Dark Theme */
-  --auth-bg: #121212;
-  --auth-card-bg: #1e1e1e;
-  --auth-card-border: #3d3520;
+  --auth-bg: #0f172a;
+  --auth-card-bg: #1e293b;
+  --auth-card-border: #334155;
   --auth-label: #bda050;
-  --auth-input-bg: #161616;
-  --auth-input-border: #333333;
-  --auth-input-text: #e8e8e8;
-  --auth-input-placeholder: #555555;
+  --auth-input-bg: #0f172a;
+  --auth-input-border: #334155;
+  --auth-input-text: #f8fafc;
+  --auth-input-placeholder: #64748b;
   --auth-icon: #D4AF37;
   --auth-link: #D4AF37;
-  --auth-footer: #666666;
+  --auth-footer: #94a3b8;
 }
 
 /* ──────────────────────────────
@@ -206,10 +214,10 @@ select option { background: var(--bg-card); color: var(--text-primary); }
 .btn-danger:hover { filter: brightness(0.9); }
 
 .card {
-  background: var(--bg-card);
+  background: var(--bg-bo-card, #1e293b);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
-  border: 1px solid var(--border-light);
+  border: 1px solid var(--border-bo, #334155);
   box-shadow: var(--shadow);
   transition: background 0.25s, border-color 0.25s;
   overflow-x: auto;

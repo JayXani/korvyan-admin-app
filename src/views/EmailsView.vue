@@ -756,8 +756,8 @@ async function sendTest() {
 
 /* Tenant Selection Hub */
 .tenant-selection-hub {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
+  background: var(--bg-bo-card, #1e293b);
+  border: 1px solid var(--border-bo, #334155);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
 }
@@ -798,8 +798,8 @@ async function sendTest() {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-input);
-  border: 1px solid var(--border-light);
+  background: var(--bg-bo, #0f172a);
+  border: 1px solid var(--border-bo, #334155);
   border-radius: 8px;
   padding: 6px 12px;
   min-width: 260px;
@@ -823,8 +823,8 @@ async function sendTest() {
   gap: 12px;
 }
 .tenant-card {
-  background: var(--bg-surface, rgba(255, 255, 255, 0.02));
-  border: 1.5px solid var(--border-light);
+  background: var(--bg-bo, #0f172a);
+  border: 1.5px solid var(--border-bo, #334155);
   border-radius: 10px;
   padding: 12px 14px;
   cursor: pointer;
@@ -907,8 +907,8 @@ async function sendTest() {
 
 /* Hostinger Tenant Banner */
 .hostinger-tenant-banner {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(0, 0, 0, 0.2));
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+  border: 1px solid var(--border-bo, #334155);
   border-radius: 12px;
   padding: 1rem 1.5rem;
   display: flex;
@@ -992,7 +992,12 @@ async function sendTest() {
 @media(max-width: 900px) { .email-manager-layout { grid-template-columns: 1fr; } }
 
 /* Sidebar Nav */
-.sidebar-card { padding: 1rem; border-radius: 12px; }
+.sidebar-card {
+  padding: 1rem;
+  border-radius: 12px;
+  background: var(--bg-bo-card, #1e293b);
+  border: 1px solid var(--border-bo, #334155);
+}
 .nav-pills { display: flex; flex-direction: column; gap: 4px; }
 .nav-pill {
   display: flex; align-items: center; justify-content: space-between;

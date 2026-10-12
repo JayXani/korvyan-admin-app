@@ -413,8 +413,8 @@ onMounted(() => {
 
 /* Header Hero Card */
 .bo-page-header {
-  background: var(--bg-surface, #1e222d);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  background: var(--bg-bo-card, #1e293b);
+  border: 1px solid var(--border-bo, #334155);
   border-radius: 12px;
   padding: 1.5rem 1.75rem;
   display: flex;
@@ -545,8 +545,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 1.25rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--bg-bo-card, #1e293b);
+  border: 1px solid var(--border-bo, #334155);
   padding: 1.25rem;
   border-radius: 12px;
   cursor: pointer;
@@ -637,8 +637,8 @@ onMounted(() => {
 }
 
 .main-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--bg-bo-card, #1e293b);
+  border: 1px solid var(--border-bo, #334155);
   border-radius: 12px;
   padding: 1.5rem;
 }
@@ -807,8 +807,8 @@ onMounted(() => {
 }
 
 .modal-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
+  background: var(--bg-bo-card, #1e293b);
+  border: 1px solid var(--border-bo, #334155);
   border-radius: 12px;
   width: 90%;
   max-width: 500px;
