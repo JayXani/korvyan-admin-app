@@ -108,36 +108,56 @@
               <i class="fas fa-ban"></i> Desabilitar Todos
             </button>
           </div>
-          <div class="divider"></div>
-          <p class="section-title"><i class="fas fa-cubes text-gold" style="margin-right:6px"></i>E-MAILS DO SISTEMA</p>
-          <div 
-            v-for="t in systemTemplates" 
-            :key="t.id" 
-            class="nav-pill template-pill" 
-            :class="{ 'active': activeTab === 'templates' && selectedTemplate?.id === t.id }"
-            @click="selectTemplate(t)"
-          >
-            <div class="pill-content">
-              <span class="pill-name">{{ t.name }}</span>
-              <span class="pill-trigger">{{ t.trigger }}</span>
-            </div>
-            <span :class="['status-dot', t.enabled ? 'dot-active' : 'dot-inactive']" :title="t.enabled ? 'Template Ativo' : 'Template Inativo'"></span>
+
+          <!-- Barra de Pesquisa de Templates -->
+          <div class="template-search-box">
+            <i class="fas fa-magnifying-glass"></i>
+            <input v-model="templateSearch" type="text" placeholder="Buscar template ou gatilho..." />
+            <button v-if="templateSearch" class="clear-search-btn" @click="templateSearch = ''" title="Limpar busca">
+              <i class="fas fa-times"></i>
+            </button>
           </div>
 
           <div class="divider"></div>
-          <p class="section-title"><i class="fas fa-user-gear text-gold" style="margin-right:6px"></i>E-MAILS DO USUÁRIO</p>
-          <div 
-            v-for="t in userTemplates" 
-            :key="t.id" 
-            class="nav-pill template-pill" 
-            :class="{ 'active': activeTab === 'templates' && selectedTemplate?.id === t.id }"
-            @click="selectTemplate(t)"
-          >
-            <div class="pill-content">
-              <span class="pill-name">{{ t.name }}</span>
-              <span class="pill-trigger">{{ t.trigger }}</span>
+
+          <!-- Lista de Templates com Scroll Vertical Dedicado -->
+          <div class="templates-scroll-list">
+            <p class="section-title"><i class="fas fa-cubes text-gold" style="margin-right:6px"></i>E-MAILS DO SISTEMA ({{ filteredSystemTemplates.length }})</p>
+            <div 
+              v-for="t in filteredSystemTemplates" 
+              :key="t.id" 
+              class="nav-pill template-pill" 
+              :class="{ 'active': activeTab === 'templates' && selectedTemplate?.id === t.id }"
+              @click="selectTemplate(t)"
+            >
+              <div class="pill-content">
+                <span class="pill-name">{{ t.name }}</span>
+                <span class="pill-trigger">{{ t.trigger }}</span>
+              </div>
+              <span :class="['status-dot', t.enabled ? 'dot-active' : 'dot-inactive']" :title="t.enabled ? 'Template Ativo' : 'Template Inativo'"></span>
             </div>
-            <span :class="['status-dot', t.enabled ? 'dot-active' : 'dot-inactive']" :title="t.enabled ? 'Template Ativo' : 'Template Inativo'"></span>
+            <div v-if="filteredSystemTemplates.length === 0" class="no-templates-found">
+              Nenhum template encontrado
+            </div>
+
+            <div class="divider"></div>
+            <p class="section-title"><i class="fas fa-user-gear text-gold" style="margin-right:6px"></i>E-MAILS DO USUÁRIO ({{ filteredUserTemplates.length }})</p>
+            <div 
+              v-for="t in filteredUserTemplates" 
+              :key="t.id" 
+              class="nav-pill template-pill" 
+              :class="{ 'active': activeTab === 'templates' && selectedTemplate?.id === t.id }"
+              @click="selectTemplate(t)"
+            >
+              <div class="pill-content">
+                <span class="pill-name">{{ t.name }}</span>
+                <span class="pill-trigger">{{ t.trigger }}</span>
+              </div>
+              <span :class="['status-dot', t.enabled ? 'dot-active' : 'dot-inactive']" :title="t.enabled ? 'Template Ativo' : 'Template Inativo'"></span>
+            </div>
+            <div v-if="filteredUserTemplates.length === 0" class="no-templates-found">
+              Nenhum template encontrado
+            </div>
           </div>
         </div>
       </div>
@@ -549,9 +569,30 @@ const defaultTemplates: EmailTemplate[] = [
 
 const templates = ref<EmailTemplate[]>([])
 const selectedTemplate = ref<EmailTemplate | null>(null)
+const templateSearch = ref('')
 
 const systemTemplates = computed(() => templates.value.filter(t => t.category === 'sistema' || !t.category))
 const userTemplates = computed(() => templates.value.filter(t => t.category === 'usuario'))
+
+const filteredSystemTemplates = computed(() => {
+  const q = templateSearch.value.trim().toLowerCase()
+  if (!q) return systemTemplates.value
+  return systemTemplates.value.filter(t => 
+    t.name.toLowerCase().includes(q) || 
+    (t.trigger && t.trigger.toLowerCase().includes(q)) ||
+    (t.subject && t.subject.toLowerCase().includes(q))
+  )
+})
+
+const filteredUserTemplates = computed(() => {
+  const q = templateSearch.value.trim().toLowerCase()
+  if (!q) return userTemplates.value
+  return userTemplates.value.filter(t => 
+    t.name.toLowerCase().includes(q) || 
+    (t.trigger && t.trigger.toLowerCase().includes(q)) ||
+    (t.subject && t.subject.toLowerCase().includes(q))
+  )
+})
 
 const showPreview = ref(false)
 const previewHtml = computed(() => {
@@ -966,7 +1007,7 @@ async function sendTest() {
 .section-title { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; padding: 0 16px; margin-bottom: 8px; }
 
 /* Bulk Toggle Actions */
-.bulk-toggle-box { display: flex; gap: 6px; padding: 8px 4px; }
+.bulk-toggle-box { display: flex; gap: 6px; padding: 8px 4px 4px; }
 .btn-bulk {
   flex: 1; padding: 7px 6px; font-size: 0.72rem; font-weight: 700; border-radius: 6px;
   border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center;
@@ -976,6 +1017,75 @@ async function sendTest() {
 .btn-bulk.enable:hover { background: rgba(16, 185, 129, 0.15); border-color: #10b981; }
 .btn-bulk.disable { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
 .btn-bulk.disable:hover { background: rgba(239, 68, 68, 0.15); border-color: #ef4444; }
+
+/* Template Search Box */
+.template-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin: 4px 2px 0;
+}
+.template-search-box i {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+.template-search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  width: 100%;
+}
+.clear-search-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+}
+.clear-search-btn:hover {
+  color: var(--text-primary);
+}
+
+/* Scroll Vertical Dedicado para os Templates */
+.templates-scroll-list {
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.templates-scroll-list::-webkit-scrollbar {
+  width: 4px;
+}
+.templates-scroll-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+}
+.templates-scroll-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+}
+.templates-scroll-list::-webkit-scrollbar-thumb:hover {
+  background: var(--gold, #d4af37);
+}
+
+.no-templates-found {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 10px 16px;
+  font-style: italic;
+  text-align: center;
+}
 
 /* Template Pills */
 .template-pill { display: flex; align-items: center; padding: 12px 16px; text-align: left; }

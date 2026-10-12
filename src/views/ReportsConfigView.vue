@@ -1,13 +1,18 @@
 <template>
   <div class="reports-config-container">
-    <!-- Header -->
+    <!-- Header Hero Card -->
     <div class="bo-page-header">
       <div class="bo-page-header-left">
-        <div class="title-with-badge">
-          <h1>Configurações de Relatórios Dinâmicos</h1>
-          <span class="badge-bo">REPORTS_CONFIG</span>
+        <div class="header-icon-box">
+          <i class="fas fa-sliders text-gold"></i>
         </div>
-        <p>Gerencie fontes de dados (data sources), domínios permitidos e o catálogo de campos para extração dinâmica com ORM Builder.</p>
+        <div class="header-titles">
+          <div class="title-with-badge">
+            <h1>Configurações de Relatórios Dinâmicos</h1>
+            <span class="badge-bo">REPORTS_CONFIG</span>
+          </div>
+          <p>Gerencie fontes de dados (data sources), domínios permitidos e o catálogo de campos para extração dinâmica com ORM Builder.</p>
+        </div>
       </div>
       <div class="header-actions">
         <button class="btn btn-outline" @click="loadConfigs" :disabled="loading">
@@ -404,6 +409,130 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+/* Header Hero Card */
+.bo-page-header {
+  background: var(--bg-surface, #1e222d);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.bo-page-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.header-icon-box {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+  flex-shrink: 0;
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.title-with-badge h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.badge-bo {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold, #d4af37);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  font-family: monospace;
+}
+
+.header-titles p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.header-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.2rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-actions .btn-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.header-actions .btn-outline:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-muted);
+}
+
+.header-actions .btn-primary {
+  background: var(--gold, #d4af37);
+  color: #000;
+  border: 1px solid var(--gold, #d4af37);
+}
+
+.header-actions .btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 860px) {
+  .bo-page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 .type-cards-row {
