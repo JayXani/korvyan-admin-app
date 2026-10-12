@@ -90,6 +90,7 @@
           <div class="nav-section-title mt-4">GESTÃO DO PORTAL</div>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'modulos' }" @click.prevent="setTab('modulos')"><i class="fas fa-puzzle-piece"></i> Módulos (Loja/IA)</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'emails' }" @click.prevent="setTab('emails')"><i class="fas fa-envelope-open-text"></i> Templates de Email</a>
+          <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'reports-config' }" @click.prevent="setTab('reports-config')"><i class="fas fa-chart-pie"></i> Config. Relatórios</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'faq' }" @click.prevent="setTab('faq')"><i class="fas fa-question-circle"></i> FAQ (Base de Conhecimento)</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'notificacoes' }" @click.prevent="setTab('notificacoes')"><i class="fas fa-bullhorn"></i> Notificações</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'scopes' }" @click.prevent="setTab('scopes')"><i class="fas fa-key"></i> Permissões (Scopes)</a>
@@ -509,6 +510,11 @@
 
           <div v-else-if="activeTab === 'emails'" key="emails" class="fade-panel">
             <EmailsView />
+          </div>
+
+          <!-- TAB: CONFIGURAÇÕES DE RELATÓRIOS -->
+          <div v-else-if="activeTab === 'reports-config'" key="reports-config" class="fade-panel">
+            <ReportsConfigView />
           </div>
 
           <!-- TAB: DEPLOY & CI/CD -->
@@ -1002,6 +1008,7 @@ import ApiKeysView from './ApiKeysView.vue'
 import FaturamentoView from './FaturamentoView.vue'
 import KanbanView from './KanbanView.vue'
 import EmailsView from './EmailsView.vue'
+import ReportsConfigView from './ReportsConfigView.vue'
 import DeployView from './DeployView.vue'
 import { getAccessLogs } from '@/services/audit.service'
 import { getRecentLogs, getStats, type ApiLogEntry, type ApiStats } from '@/services/analytics.service'

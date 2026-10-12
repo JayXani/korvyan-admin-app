@@ -59,6 +59,11 @@
         <span>Templates de E-mail</span>
       </router-link>
 
+      <router-link to="/reports-config" class="nav-item">
+        <i class="fas fa-chart-pie"></i>
+        <span>Config. Relatórios</span>
+      </router-link>
+
       <router-link to="/faturamento" class="nav-item">
         <i class="fas fa-receipt"></i>
         <span>Faturamento</span>

@@ -31,6 +31,15 @@
           <button class="nav-pill" :class="{ 'active': activeTab === 'config' }" @click="activeTab = 'config'; selectedTemplate = null">
             <i class="fas fa-server"></i> API e Integração
           </button>
+
+          <div class="bulk-toggle-box">
+            <button class="btn-bulk enable" @click="toggleAllTemplates(true)" title="Habilitar todos os templates de e-mail">
+              <i class="fas fa-check-circle"></i> Habilitar Todos
+            </button>
+            <button class="btn-bulk disable" @click="toggleAllTemplates(false)" title="Desabilitar todos os templates de e-mail">
+              <i class="fas fa-ban"></i> Desabilitar Todos
+            </button>
+          </div>
           <div class="divider"></div>
           <p class="section-title"><i class="fas fa-cubes text-gold" style="margin-right:6px"></i>E-MAILS DO SISTEMA</p>
           <div 
@@ -562,6 +571,22 @@ async function saveTemplate() {
   }
 }
 
+async function toggleAllTemplates(enable: boolean) {
+  if (!selectedTenantId.value) return
+  try {
+    templates.value = templates.value.map(t => ({ ...t, enabled: enable }))
+    if (selectedTemplate.value) {
+      selectedTemplate.value.enabled = enable
+    }
+    await Promise.all(
+      templates.value.map(t => saveEmailTemplateViaWorker(t.id, t, selectedTenantId.value))
+    )
+    toastSuccess(enable ? 'Todos os templates foram habilitados com sucesso!' : 'Todos os templates foram desabilitados com sucesso!')
+  } catch (err: any) {
+    toastError('Erro ao atualizar templates: ' + err.message)
+  }
+}
+
 async function sendTest() {
   if (!testEmailAddress.value) {
     toastError('Informe um e-mail válido.')
@@ -631,6 +656,18 @@ async function sendTest() {
 .icon-right { font-size: 0.8rem; opacity: 0.5; }
 .divider { height: 1px; background: var(--border-light); margin: 12px 0; }
 .section-title { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; padding: 0 16px; margin-bottom: 8px; }
+
+/* Bulk Toggle Actions */
+.bulk-toggle-box { display: flex; gap: 6px; padding: 8px 4px; }
+.btn-bulk {
+  flex: 1; padding: 7px 6px; font-size: 0.72rem; font-weight: 700; border-radius: 6px;
+  border: 1px solid var(--border); cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 5px; transition: all 0.2s; background: var(--bg-surface);
+}
+.btn-bulk.enable { color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+.btn-bulk.enable:hover { background: rgba(16, 185, 129, 0.15); border-color: #10b981; }
+.btn-bulk.disable { color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+.btn-bulk.disable:hover { background: rgba(239, 68, 68, 0.15); border-color: #ef4444; }
 
 /* Template Pills */
 .template-pill { display: flex; align-items: center; padding: 12px 16px; text-align: left; }

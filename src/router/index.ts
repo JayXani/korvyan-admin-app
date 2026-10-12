@@ -34,6 +34,10 @@ const router = createRouter({
       redirect: '/?tab=deploy',
     },
     {
+      path: '/reports-config',
+      redirect: '/?tab=reports-config',
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },
