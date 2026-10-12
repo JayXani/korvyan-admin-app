@@ -7,19 +7,87 @@
       </div>
     </div>
 
-    <!-- Seletor de Tenant -->
-    <div class="card tenant-selector-card mb-4">
-      <div class="form-field" style="max-width: 700px; margin: 0 auto;">
-        <label class="form-label" style="text-align: center; display: block; font-size: 0.9rem;">SELECIONE O TENANT (CLIENTE)</label>
-        <div class="select-wrapper">
-          <select v-model="selectedTenantId" class="filter-select tenant-select" @change="onTenantChange">
-            <option value="" disabled>-- Clique para selecionar um Tenant --</option>
-            <option v-for="t in tenants" :key="t.tenant_prefix" :value="t.tenant_prefix">
-              {{ t.name || t.tenant_prefix }} ({{ t.tenant_prefix }})
-            </option>
-          </select>
-          <i class="fas fa-chevron-down select-icon"></i>
+    <!-- Hub de Seleção de Tenants em Cards -->
+    <div class="tenant-selection-hub mb-4">
+      <div class="hub-header">
+        <div class="hub-header-left">
+          <div class="hub-title-row">
+            <i class="fas fa-building text-gold"></i>
+            <h3>Empresas & Tenants Cadastrados</h3>
+            <span class="count-pill">{{ filteredTenants.length }}</span>
+          </div>
+          <p class="hub-sub">Selecione uma empresa para gerenciar as credenciais da Hostinger e customizar os templates de e-mail</p>
         </div>
+        <div class="hub-search-box">
+          <i class="fas fa-magnifying-glass"></i>
+          <input v-model="tenantSearch" type="text" placeholder="Filtrar empresa por nome ou prefixo..." />
+        </div>
+      </div>
+
+      <div class="tenants-cards-grid">
+        <div 
+          v-for="t in filteredTenants" 
+          :key="t.tenant_prefix"
+          class="tenant-card"
+          :class="{ active: selectedTenantId === t.tenant_prefix }"
+          @click="selectTenant(t.tenant_prefix)"
+        >
+          <div class="tenant-card-top">
+            <div class="tenant-avatar" :style="{ background: t.primary_color || 'var(--gold, #d4af37)' }">
+              {{ (t.name || t.tenant_prefix || '?').substring(0, 2).toUpperCase() }}
+            </div>
+            <span v-if="selectedTenantId === t.tenant_prefix" class="badge-selected">
+              <i class="fas fa-circle-check"></i> Ativo
+            </span>
+            <span v-else class="tenant-slug">@{{ t.tenant_prefix }}</span>
+          </div>
+          <div class="tenant-card-info">
+            <h4 class="tenant-title">{{ t.name || t.tenant_prefix }}</h4>
+            <div class="tenant-meta-row">
+              <span class="tenant-prefix-tag">prefix: {{ t.tenant_prefix }}</span>
+              <span v-if="selectedTenantId === t.tenant_prefix && emailConfig.apiToken" class="hostinger-mini-status text-success" title="Hostinger Conectada">
+                <i class="fas fa-bolt"></i> SMTP Ativo
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Banner de Integração Hostinger do Tenant Selecionado -->
+    <div v-if="selectedTenantId && currentTenant" class="hostinger-tenant-banner mb-4">
+      <div class="banner-left">
+        <div class="banner-icon-box">
+          <i class="fas fa-server"></i>
+        </div>
+        <div class="banner-info">
+          <div class="banner-title-line">
+            <h3>Hostinger Mail &bull; {{ currentTenant.name || currentTenant.tenant_prefix }}</h3>
+            <span v-if="emailConfig.apiToken" class="badge-status-pill active">
+              <i class="fas fa-circle-check"></i> Hostinger Conectada
+            </span>
+            <span v-else class="badge-status-pill pending">
+              <i class="fas fa-clock"></i> Pendente de Configuração
+            </span>
+          </div>
+          <p class="banner-meta">
+            Remetente: <strong class="text-gold">{{ emailConfig.fromEmail || 'Não definido' }}</strong>
+            <span class="dot-sep">&bull;</span>
+            Nome: <strong>{{ emailConfig.fromName || 'Padrão do Sistema' }}</strong>
+            <span class="dot-sep">&bull;</span>
+            Mailbox ID: <code class="mini-code">{{ emailConfig.mailboxId || 'Não vinculado' }}</code>
+          </p>
+        </div>
+      </div>
+
+      <div class="banner-actions">
+        <button 
+          class="btn btn-outline btn-sm"
+          :class="{ active: activeTab === 'config' }"
+          @click="activeTab = 'config'; selectedTemplate = null"
+        >
+          <i class="fas fa-sliders"></i> Configurar Hostinger / SMTP
+        </button>
       </div>
     </div>
 
@@ -234,7 +302,26 @@ const { success: toastSuccess, error: toastError } = useToast()
 
 const tenants = ref<TenantConfig[]>([])
 const selectedTenantId = ref('')
+const tenantSearch = ref('')
 const activeTab = ref<'config' | 'templates'>('config')
+
+const filteredTenants = computed(() => {
+  if (!tenantSearch.value) return tenants.value
+  const q = tenantSearch.value.toLowerCase()
+  return tenants.value.filter(t => 
+    (t.name || '').toLowerCase().includes(q) || 
+    (t.tenant_prefix || '').toLowerCase().includes(q)
+  )
+})
+
+const currentTenant = computed(() => {
+  return tenants.value.find(t => t.tenant_prefix === selectedTenantId.value)
+})
+
+async function selectTenant(prefix: string) {
+  selectedTenantId.value = prefix
+  await onTenantChange()
+}
 
 const emailConfig = ref({
   apiToken: '',
@@ -488,6 +575,10 @@ const testEmailAddress = ref('')
 onMounted(async () => {
   try {
     tenants.value = await getAllTenants()
+    if (tenants.value.length > 0 && !selectedTenantId.value) {
+      selectedTenantId.value = tenants.value[0].tenant_prefix
+      await onTenantChange()
+    }
   } catch(err) {
     console.error(err)
     toastError('Erro ao carregar tenants.')
@@ -622,21 +713,238 @@ async function sendTest() {
 .mb-4 { margin-bottom: 1.5rem; }
 .mb-0 { margin-bottom: 0 !important; }
 
-/* Selector */
-.tenant-selector-card {
-  background: linear-gradient(145deg, var(--bg-card), var(--bg-surface));
-  padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-light);
+/* Tenant Selection Hub */
+.tenant-selection-hub {
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
 }
-.select-wrapper { position: relative; }
-.tenant-select {
-  width: 100%; padding: 10px 14px; font-size: 14px; font-weight: 500;
-  border-radius: 8px; border: 2px solid var(--border-light);
-  appearance: none; background: var(--bg-input); color: var(--text-primary); cursor: pointer;
-  text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+.hub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
-.tenant-select option { font-size: 14px; font-weight: normal; }
-.tenant-select:focus { border-color: var(--primary); outline: none; }
-.select-icon { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); pointer-events: none; color: var(--text-muted); }
+.hub-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.hub-title-row h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.count-pill {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+}
+.hub-sub {
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.hub-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 6px 12px;
+  min-width: 260px;
+}
+.hub-search-box i {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+.hub-search-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  width: 100%;
+}
+
+.tenants-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.tenant-card {
+  background: var(--bg-surface, rgba(255, 255, 255, 0.02));
+  border: 1.5px solid var(--border-light);
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tenant-card:hover {
+  border-color: var(--gold);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.06));
+  transform: translateY(-2px);
+}
+.tenant-card.active {
+  border-color: var(--gold);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.12));
+  box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+}
+.tenant-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.tenant-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.badge-selected {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tenant-slug {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: monospace;
+}
+.tenant-card-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.tenant-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tenant-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 0.7rem;
+}
+.tenant-prefix-tag {
+  color: var(--text-muted);
+  font-family: monospace;
+}
+.hostinger-mini-status {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Hostinger Tenant Banner */
+.hostinger-tenant-banner {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(0, 0, 0, 0.2));
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.banner-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+.banner-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--gold-dim);
+  border: 1px solid var(--gold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.banner-title-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.banner-title-line h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.badge-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+.badge-status-pill.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+.badge-status-pill.pending {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+.banner-meta {
+  margin: 4px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.dot-sep {
+  margin: 0 6px;
+  opacity: 0.5;
+}
+.mini-code {
+  font-family: monospace;
+  background: var(--bg-input);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+.text-gold {
+  color: var(--gold);
+}
 
 /* Layout Grid */
 .email-manager-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; align-items: start; }
