@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <div class="page-header">
       <div class="page-header-left">
@@ -77,6 +77,12 @@
               <input v-model="form.email"  placeholder="email@dominio.com"  type="email" @input="form.email = maskEmail(form.email)" />
             </div>
           </div>
+          <div class="form-row" v-if="!editing" style="margin-top: 0.25rem;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:0.83rem;cursor:pointer;color:var(--text-secondary)">
+              <input type="checkbox" v-model="sendWelcomeEmail" />
+              <span>Enviar e-mail de boas-vindas (Novo Acesso) com dados de login</span>
+            </label>
+          </div>
         </div>
         <div class="modal-footer">
           <button class="btn btn-outline" @click="showModal = false">Cancelar</button>
@@ -94,6 +100,7 @@
 import { maskCPF, maskPhone, maskCEP, maskEmail } from '@/utils/masks'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { getAllOperators, createOperator, type User } from '@/services/user.service'
+import { sendTemplateEmail } from '@/services/mail.service'
 import { useToast } from '@/composables/useToast'
 
 const { success, error: toastError } = useToast()
@@ -104,6 +111,7 @@ const search = ref('')
 const showModal = ref(false)
 const editing = ref<User | null>(null)
 const saving = ref(false)
+const sendWelcomeEmail = ref(true)
 const modalError = ref('')
 const form = ref({ name: '', user_login: '', password: '', email: '' })
 
@@ -147,6 +155,15 @@ async function save() {
       password: form.value.password,
       person: { name: form.value.name, email: form.value.email || undefined },
     })
+
+    if (!editing.value && sendWelcomeEmail.value && form.value.email) {
+      void sendTemplateEmail(form.value.email, 'novo_acesso', {
+        name: form.value.name,
+        login: form.value.user_login,
+        password: form.value.password,
+      }).catch(mErr => console.warn('Aviso: Falha ao enviar e-mail de acesso Master:', mErr))
+    }
+
     showModal.value = false
     success('Usuário master criado com sucesso.')
     await load()

@@ -228,9 +228,14 @@ const defaultTemplates: EmailTemplate[] = [
     html: `<div style="text-align:center; padding: 20px;">\n  <h2>Olá, {{ name }}</h2>\n  <p>Recebemos uma solicitação para redefinir a sua senha.</p>\n  <a href="{{ link }}" style="display:inline-block; padding:10px 20px; background:#8b5cf6; color:#fff; text-decoration:none; border-radius:4px;">Redefinir Senha</a>\n</div>`
   },
   { 
-    id: 'novo_acesso', name: 'Novo Acesso', subject: 'Bem-vindo ao portal Korvyan', trigger: 'Criação de Usuário',
+    id: 'novo_acesso', name: 'Novo Acesso (Boas-vindas)', subject: 'Bem-vindo ao portal Korvyan', trigger: 'Criação de Usuário (Admin)',
     vars: ['{{ name }}', '{{ login }}', '{{ password }}'], enabled: true,
     html: `<div style="padding: 20px;">\n  <h2>Bem-vindo, {{ name }}!</h2>\n  <p>Sua conta foi criada com sucesso.</p>\n  <p><strong>Login:</strong> {{ login }}<br><strong>Senha temporária:</strong> {{ password }}</p>\n</div>`
+  },
+  { 
+    id: 'aviso_login', name: 'Alerta de Novo Login', subject: 'Novo acesso identificado na sua conta', trigger: 'Autenticação no Portal',
+    vars: ['{{ name }}', '{{ login }}', '{{ date }}'], enabled: false,
+    html: `<div style="padding: 20px;">\n  <h2>Olá, {{ name }}!</h2>\n  <p>Identificamos um novo acesso à sua conta no sistema.</p>\n  <p><strong>Login:</strong> {{ login }}<br><strong>Data/Hora:</strong> {{ date }}</p>\n  <p>Se você reconhece esse acesso, nenhuma ação é necessária.</p>\n</div>`
   },
   { 
     id: 'fatura_gerada', name: 'Boleto/Fatura', subject: 'Seu boleto Korvyan chegou', trigger: 'Faturamento Mensal',
