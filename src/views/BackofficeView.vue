@@ -941,13 +941,36 @@
 
     <!-- Modal FAQ Article -->
     <teleport to="body">
-      <div v-if="showFaqModal" class="modal-overlay" style="z-index: 99999;" @click.self="showFaqModal = false">
-        <div class="modal-card-bo" style="max-width:580px" @click.stop>
-          <div class="modal-header">
-            <h3>{{ editingFaqArticle ? 'Editar Artigo' : 'Novo Artigo de FAQ' }}</h3>
+      <div v-if="showFaqModal" class="modal-overlay" style="z-index: 99999;">
+        <div class="modal-card-bo" style="max-width:860px; width:95%; max-height:90vh;" @click.stop>
+          <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap: 1rem; flex-wrap:wrap;">
+              <h3 style="margin:0;">{{ editingFaqArticle ? 'Editar Artigo' : 'Novo Artigo de FAQ' }}</h3>
+              <div class="faq-modal-tabs" style="display:inline-flex; background:rgba(15,23,42,0.6); padding:3px; border-radius:8px; border:1px solid var(--border-bo, #334155);">
+                <button
+                  type="button"
+                  class="faq-tab-btn"
+                  :style="faqModalTab === 'edit' ? 'background: var(--master-brand, #8b5cf6); color:#fff; border-radius:6px; font-weight:600;' : 'background:transparent; color:var(--text-bo-muted, #94a3b8); border-radius:6px;'"
+                  style="border:none; padding:5px 12px; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;"
+                  @click="faqModalTab = 'edit'"
+                >
+                  <i class="fas fa-pen"></i> Edição
+                </button>
+                <button
+                  type="button"
+                  class="faq-tab-btn"
+                  :style="faqModalTab === 'preview' ? 'background: var(--master-brand, #8b5cf6); color:#fff; border-radius:6px; font-weight:600;' : 'background:transparent; color:var(--text-bo-muted, #94a3b8); border-radius:6px;'"
+                  style="border:none; padding:5px 12px; font-size:0.8rem; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:all 0.2s;"
+                  @click="faqModalTab = 'preview'"
+                >
+                  <i class="fas fa-eye"></i> Pré-visualização
+                </button>
+              </div>
+            </div>
             <button class="close-btn" @click="showFaqModal = false" title="Fechar"><i class="fas fa-xmark"></i></button>
           </div>
-          <div class="modal-body-bo">
+
+          <div v-if="faqModalTab === 'edit'" class="modal-body-bo">
             <div style="display:flex;flex-direction:column;gap:1rem">
               <div class="form-group">
                 <label>TÍTULO *</label>
@@ -973,10 +996,30 @@
               </div>
               <div class="form-group">
                 <label>CONTEÚDO HTML (opcional)</label>
-                <textarea v-model="faqForm.content" class="form-input" rows="4" placeholder="Conteúdo do artigo em HTML ou texto..."></textarea>
+                <textarea v-model="faqForm.content" class="form-input" rows="8" placeholder="Conteúdo do artigo em HTML ou texto (ex: <h4>Subtítulo</h4>, <p>Texto</p>, <ul><li>Item</li></ul>)..."></textarea>
               </div>
             </div>
           </div>
+
+          <div v-else class="modal-body-bo" style="background: rgba(15, 23, 42, 0.4); padding: 1.75rem 2rem;">
+            <div class="faq-preview-box">
+              <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 10px; border-radius:20px; font-size:0.7rem; font-weight:800; background:rgba(139,92,246,0.15); color:var(--master-brand, #8b5cf6); border:1px solid rgba(139,92,246,0.3); text-transform:uppercase; margin-bottom:10px;">
+                <i class="fas fa-book-open"></i> {{ faqForm.category || 'Base de Conhecimento' }}
+              </div>
+              <h2 style="font-size:1.35rem; font-weight:700; color:var(--text-bo, #f8fafc); margin-bottom:6px; display:flex; align-items:center; gap:10px;">
+                <i :class="faqForm.hasVideo ? 'fas fa-circle-play' : 'fas fa-file-lines'" style="color:var(--master-brand, #8b5cf6)"></i>
+                {{ faqForm.title || 'Título do Artigo' }}
+              </h2>
+              <p v-if="faqForm.description" style="font-size:0.85rem; color:var(--text-bo-muted, #94a3b8); margin-bottom:1.25rem;">
+                {{ faqForm.description }}
+              </p>
+              <div v-if="faqForm.hasVideo && faqForm.videoUrl" style="position:relative; padding-bottom:56.25%; height:0; overflow:hidden; border-radius:10px; margin-bottom:1.5rem; border:1px solid var(--border-bo, #334155);">
+                <iframe :src="faqForm.videoUrl" style="position:absolute; top:0; left:0; width:100%; height:100%;" frameborder="0" allowfullscreen></iframe>
+              </div>
+              <div class="modern-typography" v-html="faqForm.content || '<p style=\'color:var(--text-bo-muted, #94a3b8); font-style:italic;\'>Nenhum conteúdo HTML digitado ainda. Escreva na aba de Edição para visualizar aqui.</p>'"></div>
+            </div>
+          </div>
+
           <div class="modal-footer-bo">
             <button class="btn btn-outline" @click="showFaqModal = false">Cancelar</button>
             <button class="btn btn-master" @click="saveFaqArticle" :disabled="savingFaq || !faqForm.title">
@@ -1426,6 +1469,7 @@ const savingFaq = ref(false)
 const faqForm = ref({ title: '', category: '', description: '', videoUrl: '', content: '', hasVideo: false })
 
 const faqCategories = ['Contratos & Clientes', 'Financeiro & Mensalidades', 'Relatórios & Slideshow', 'Usuários & Permissões', 'Configurações', 'Outros']
+const faqModalTab = ref<'edit' | 'preview'>('edit')
 
 const filteredFaqArticles = computed(() => {
   const q = faqSearch.value.toLowerCase()
@@ -1460,6 +1504,7 @@ async function loadFaqArticles() {
 }
 
 function openFaqModal(a?: any) {
+  faqModalTab.value = 'edit'
   editingFaqArticle.value = a ?? null
   faqForm.value = {
     title: a?.title ?? '',
