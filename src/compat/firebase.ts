@@ -58,16 +58,71 @@ export const getDoc = async (path: string) => {
 }
 
 export const getDocs = async (colPath: string) => {
+  if (typeof colPath === 'string' && colPath.includes('faq_articles')) {
+    try {
+      const res = await workersApi.get('/api/faq')
+      const articles = res.data?.articles || []
+      const docs = articles.map((a: any) => ({
+        id: a.id,
+        ref: { id: a.id },
+        data: () => a,
+        ...a
+      }))
+      return {
+        docs,
+        forEach: (cb: any) => docs.forEach(cb),
+        empty: docs.length === 0,
+        size: docs.length
+      }
+    } catch (e) {
+      console.warn('[Firebase Compat] Erro ao buscar faqs via worker:', e)
+    }
+  }
   return {
     docs: [] as any[],
     forEach: (_cb: any) => {},
+    empty: true,
+    size: 0
   }
 }
 
-export const setDoc = async (docPath: string, data: any) => Promise.resolve()
-export const addDoc = async (colPath: string, data: any) => Promise.resolve({ id: 'doc_' + Date.now() })
-export const updateDoc = async (docPath: string, data: any) => Promise.resolve()
-export const deleteDoc = async (docPath: string) => Promise.resolve()
+export const setDoc = async (docPathOrRef: any, data: any) => {
+  const p = typeof docPathOrRef === 'string' ? docPathOrRef : (docPathOrRef?.id ? `faq_articles/${docPathOrRef.id}` : '')
+  if (p.includes('faq_articles')) {
+    const id = p.split('/').pop()
+    await workersApi.patch(`/api/faq/${id}`, data)
+    return
+  }
+  return Promise.resolve()
+}
+
+export const addDoc = async (colPath: string, data: any) => {
+  if (typeof colPath === 'string' && colPath.includes('faq_articles')) {
+    const res = await workersApi.post('/api/faq', data)
+    return { id: res.data?.id || ('doc_' + Date.now()) }
+  }
+  return Promise.resolve({ id: 'doc_' + Date.now() })
+}
+
+export const updateDoc = async (docRefOrPath: any, data: any) => {
+  const p = typeof docRefOrPath === 'string' ? docRefOrPath : (docRefOrPath?.id ? `faq_articles/${docRefOrPath.id}` : '')
+  if (p.includes('faq_articles')) {
+    const id = p.split('/').pop()
+    await workersApi.patch(`/api/faq/${id}`, data)
+    return
+  }
+  return Promise.resolve()
+}
+
+export const deleteDoc = async (docRefOrPath: any) => {
+  const p = typeof docRefOrPath === 'string' ? docRefOrPath : (docRefOrPath?.id ? `faq_articles/${docRefOrPath.id}` : '')
+  if (p.includes('faq_articles')) {
+    const id = p.split('/').pop()
+    await workersApi.delete(`/api/faq/${id}`)
+    return
+  }
+  return Promise.resolve()
+}
 export const onSnapshot = (_target: any, callback: (snap: any) => void) => {
   return () => {} // unsubscribe function
 }

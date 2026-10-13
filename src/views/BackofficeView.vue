@@ -854,8 +854,8 @@
 
     <!-- Modal Tenant -->
     <teleport to="body">
-      <div v-if="showTenantModal" class="modal-overlay">
-        <div class="modal-card-bo">
+      <div v-if="showTenantModal" class="modal-overlay" style="z-index: 99999;" @click.self="showTenantModal = false">
+        <div class="modal-card-bo" @click.stop>
           <div class="modal-header">
             <h3>{{ editingTenant ? 'Editar Tenant' : 'Novo Tenant' }}</h3>
             <button class="close-btn" @click="showTenantModal = false" title="Fechar"><i class="fas fa-xmark"></i></button>
@@ -903,10 +903,12 @@
           </div>
         </div>
       </div>
+    </teleport>
 
-      <!-- Modal Scope -->
-      <div v-if="showScopeModal" class="modal-overlay">
-        <div class="modal-card-bo" style="max-width:440px">
+    <!-- Modal Scope -->
+    <teleport to="body">
+      <div v-if="showScopeModal" class="modal-overlay" style="z-index: 99999;" @click.self="showScopeModal = false">
+        <div class="modal-card-bo" style="max-width:440px" @click.stop>
           <div class="modal-header">
             <h3>{{ editingScope ? 'Editar Escopo' : 'Novo Escopo' }}</h3>
             <button class="close-btn" @click="showScopeModal = false" title="Fechar"><i class="fas fa-xmark"></i></button>
@@ -935,10 +937,12 @@
           </div>
         </div>
       </div>
+    </teleport>
 
-      <!-- Modal FAQ Article -->
-      <div v-if="showFaqModal" class="modal-overlay">
-        <div class="modal-card-bo" style="max-width:580px">
+    <!-- Modal FAQ Article -->
+    <teleport to="body">
+      <div v-if="showFaqModal" class="modal-overlay" style="z-index: 99999;" @click.self="showFaqModal = false">
+        <div class="modal-card-bo" style="max-width:580px" @click.stop>
           <div class="modal-header">
             <h3>{{ editingFaqArticle ? 'Editar Artigo' : 'Novo Artigo de FAQ' }}</h3>
             <button class="close-btn" @click="showFaqModal = false" title="Fechar"><i class="fas fa-xmark"></i></button>
@@ -1432,7 +1436,22 @@ async function loadFaqArticles() {
   loadingFaq.value = true
   try {
     const snap = await getDocs(collection(db, 'faq_articles'))
-    faqArticlesData.value = snap.docs.map(d => ({ id: d.id, docRef: d.ref, ...d.data(), created_at: d.data().created_at?.toDate ? d.data().created_at.toDate().toISOString() : new Date().toISOString() })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    faqArticlesData.value = snap.docs.map((d: any) => {
+      const data = typeof d.data === 'function' ? d.data() : d
+      const rawCreated = data?.created_at || d.created_at
+      let createdIso = new Date().toISOString()
+      if (rawCreated?.toDate && typeof rawCreated.toDate === 'function') {
+        createdIso = rawCreated.toDate().toISOString()
+      } else if (rawCreated) {
+        createdIso = String(rawCreated)
+      }
+      return {
+        id: d.id,
+        docRef: d.ref || { id: d.id },
+        ...data,
+        created_at: createdIso
+      }
+    }).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
   } catch (e) {
     console.error('[FAQ Articles] Erro ao carregar:', e)
   } finally {
