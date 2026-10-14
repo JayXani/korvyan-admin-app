@@ -160,7 +160,6 @@ async function save() {
       void sendTemplateEmail(form.value.email, 'novo_acesso', {
         name: form.value.name,
         login: form.value.user_login,
-        password: form.value.password,
       }).catch(mErr => console.warn('Aviso: Falha ao enviar e-mail de acesso Master:', mErr))
     }
 

@@ -175,23 +175,22 @@ export const defaultTemplates: EmailTemplate[] = [
     subject: 'Bem-vindo ao portal Korvyan - Seus dados de acesso',
     trigger: 'Criação de Usuário (Admin)',
     category: 'sistema',
-    vars: ['{{ name }}', '{{ login }}', '{{ password }}'],
+    vars: ['{{ name }}', '{{ login }}'],
     enabled: true,
     html: createModernEmailHtml({
       badge: 'Conta Criada',
       title: 'Bem-vindo à Plataforma Korvyan',
-      subtitle: 'Sua conta de acesso foi configurada com sucesso.',
+      subtitle: 'Sua conta de acesso foi cadastrada com sucesso.',
       greeting: 'Olá, {{ name }}!',
-      description: 'Você acaba de receber acesso ao sistema de gestão. Abaixo estão as suas credenciais temporárias para o primeiro acesso:',
+      description: 'Sua conta de acesso à plataforma foi cadastrada com sucesso. Você já pode acessar o sistema utilizando suas credenciais cadastradas:',
       infoRows: [
         ['Nome', '{{ name }}'],
-        ['Usuário / Login', '{{ login }}'],
-        ['Senha Temporária', '{{ password }}']
+        ['Usuário / Login', '{{ login }}']
       ],
       alertNote: {
-        text: '<strong>Importante:</strong> Por motivos de segurança, você deverá alterar esta senha temporária no primeiro acesso através do seu perfil.',
-        color: '#f59e0b',
-        bg: 'rgba(245, 158, 11, 0.08)'
+        text: '<strong>Dica de Segurança:</strong> Nunca compartilhe seu usuário e senha com terceiros. Mantenha suas credenciais sempre seguras.',
+        color: '#818cf8',
+        bg: 'rgba(99, 102, 241, 0.08)'
       },
       btnText: 'Acessar o Sistema',
       btnUrl: 'https://korvy.korvyan.com'
