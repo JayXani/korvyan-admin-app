@@ -39,9 +39,14 @@ useTheme()
   --text-secondary: #cbd5e1;
   --text-muted: #94a3b8;
   --gold: #D4AF37;
+  --gold-rgb: 212, 175, 55;
+  --tenant-rgb: 212, 175, 55;
   --gold-hover: #b8942e;
-  --gold-light: rgba(212, 175, 55, 0.12);
-  --gold-dim: rgba(212, 175, 55, 0.06);
+  --gold-light: rgba(212, 175, 55, 0.15);
+  --gold-dim: rgba(212, 175, 55, 0.08);
+  --gold-border: rgba(212, 175, 55, 0.25);
+  --gold-shadow: rgba(212, 175, 55, 0.35);
+  --gold-gradient: linear-gradient(135deg, #D4AF37 0%, #b8942e 100%);
   --success: #3dba6f;
   --danger: #e05252;
   --info: #4da6ff;
@@ -190,7 +195,7 @@ select option { background: var(--bg-card); color: var(--text-primary); }
 .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
 .btn-outline.btn-gold,
 [data-theme="dark"] .btn-outline.btn-gold {
-  background: rgba(212, 175, 55, 0.14) !important;
+  background: var(--gold-light, rgba(212, 175, 55, 0.14)) !important;
   color: var(--gold) !important;
   border-color: var(--gold) !important;
 }

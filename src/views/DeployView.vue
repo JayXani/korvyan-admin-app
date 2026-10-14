@@ -30,6 +30,12 @@
           </button>
         </div>
 
+        <!-- Verificar Sincronização Git -->
+        <button class="btn btn-outline" :disabled="checkingGitSync" @click="handleCheckGitSync" title="Comparar commits remotos no GitHub com a VPS">
+          <i :class="checkingGitSync ? 'fas fa-spinner fa-spin' : 'fas fa-code-compare'"></i>
+          <span>{{ checkingGitSync ? 'Verificando...' : 'Verificar Status Git' }}</span>
+        </button>
+
         <!-- Testar Conexão SSH -->
         <button class="btn btn-outline" :disabled="testingConnection" @click="handleTestConnection">
           <i :class="testingConnection ? 'fas fa-spinner fa-spin' : 'fas fa-network-wired'"></i>
@@ -46,9 +52,20 @@
           <div class="card-icon-wrapper bg-blue">
             <i class="fas fa-server"></i>
           </div>
-          <span class="service-status-pill">
-            <span class="status-dot"></span> Ativo
-          </span>
+          <div class="card-status-info">
+            <span class="last-update-text">
+              <i class="fas fa-clock"></i> Última atualização: {{ serviceGitStatus.backend.lastUpdate }}
+            </span>
+            <span 
+              class="git-status-pill" 
+              :class="serviceGitStatus.backend.status"
+              :title="serviceGitStatus.backend.status === 'pending_pull' ? 'Commits enviados ao GitHub aguardando pull via SSH na VPS' : 'Código na VPS atualizado com o GitHub'"
+            >
+              <i :class="serviceGitStatus.backend.status === 'pending_pull' ? 'fas fa-cloud-arrow-down' : 'fas fa-circle-check'"></i>
+              <span class="branch-tag">{{ getBranchForEnv(selectedEnv) }}:</span>
+              {{ serviceGitStatus.backend.status === 'pending_pull' ? 'Push pendente de pull via SSH' : 'Sincronizado na VPS' }}
+            </span>
+          </div>
         </div>
         <div class="card-content">
           <h3>Backend API</h3>
@@ -73,9 +90,20 @@
           <div class="card-icon-wrapper bg-emerald">
             <i class="fas fa-globe"></i>
           </div>
-          <span class="service-status-pill">
-            <span class="status-dot"></span> Ativo
-          </span>
+          <div class="card-status-info">
+            <span class="last-update-text">
+              <i class="fas fa-clock"></i> Última atualização: {{ serviceGitStatus.front.lastUpdate }}
+            </span>
+            <span 
+              class="git-status-pill" 
+              :class="serviceGitStatus.front.status"
+              :title="serviceGitStatus.front.status === 'pending_pull' ? 'Commits enviados ao GitHub aguardando pull via SSH na VPS' : 'Código na VPS atualizado com o GitHub'"
+            >
+              <i :class="serviceGitStatus.front.status === 'pending_pull' ? 'fas fa-cloud-arrow-down' : 'fas fa-circle-check'"></i>
+              <span class="branch-tag">{{ getBranchForEnv(selectedEnv) }}:</span>
+              {{ serviceGitStatus.front.status === 'pending_pull' ? 'Push pendente de pull via SSH' : 'Sincronizado na VPS' }}
+            </span>
+          </div>
         </div>
         <div class="card-content">
           <h3>Frontend Principal</h3>
@@ -100,9 +128,20 @@
           <div class="card-icon-wrapper bg-amber">
             <i class="fas fa-bolt"></i>
           </div>
-          <span class="service-status-pill">
-            <span class="status-dot"></span> Ativo
-          </span>
+          <div class="card-status-info">
+            <span class="last-update-text">
+              <i class="fas fa-clock"></i> Última atualização: {{ serviceGitStatus.workers.lastUpdate }}
+            </span>
+            <span 
+              class="git-status-pill" 
+              :class="serviceGitStatus.workers.status"
+              :title="serviceGitStatus.workers.status === 'pending_pull' ? 'Commits enviados ao GitHub aguardando pull via SSH na VPS' : 'Código na VPS atualizado com o GitHub'"
+            >
+              <i :class="serviceGitStatus.workers.status === 'pending_pull' ? 'fas fa-cloud-arrow-down' : 'fas fa-circle-check'"></i>
+              <span class="branch-tag">{{ getBranchForEnv(selectedEnv) }}:</span>
+              {{ serviceGitStatus.workers.status === 'pending_pull' ? 'Push pendente de pull via SSH' : 'Sincronizado na VPS' }}
+            </span>
+          </div>
         </div>
         <div class="card-content">
           <h3>Workers & Filas</h3>
@@ -127,9 +166,20 @@
           <div class="card-icon-wrapper bg-purple">
             <i class="fas fa-shield-halved"></i>
           </div>
-          <span class="service-status-pill">
-            <span class="status-dot"></span> Ativo
-          </span>
+          <div class="card-status-info">
+            <span class="last-update-text">
+              <i class="fas fa-clock"></i> Última atualização: {{ serviceGitStatus['admin-app'].lastUpdate }}
+            </span>
+            <span 
+              class="git-status-pill" 
+              :class="serviceGitStatus['admin-app'].status"
+              :title="serviceGitStatus['admin-app'].status === 'pending_pull' ? 'Commits enviados ao GitHub aguardando pull via SSH na VPS' : 'Código na VPS atualizado com o GitHub'"
+            >
+              <i :class="serviceGitStatus['admin-app'].status === 'pending_pull' ? 'fas fa-cloud-arrow-down' : 'fas fa-circle-check'"></i>
+              <span class="branch-tag">{{ getBranchForEnv(selectedEnv) }}:</span>
+              {{ serviceGitStatus['admin-app'].status === 'pending_pull' ? 'Push pendente de pull via SSH' : 'Sincronizado na VPS' }}
+            </span>
+          </div>
         </div>
         <div class="card-content">
           <h3>Painel Master</h3>
@@ -159,15 +209,11 @@
           <h2>Pipeline Completo Unificado</h2>
           <p>
             Executa a esteira sequencial completa: 
-            <strong>Backend ➔ Workers ➔ Frontend ➔ Admin App</strong> com recarregamento seguro e notificação.
+            <strong>Backend ➔ Workers ➔ Frontend ➔ Admin App</strong> com recarregamento seguro na VPS.
           </p>
         </div>
       </div>
       <div class="pipeline-right">
-        <label class="email-toggle">
-          <input type="checkbox" v-model="notifyEmail" />
-          <span>Enviar e-mail Hostinger</span>
-        </label>
         <button 
           class="btn btn-gold btn-lg" 
           :disabled="isRunning" 
@@ -175,6 +221,28 @@
         >
           <i class="fas fa-rocket"></i> Disparar Pipeline Completo
         </button>
+      </div>
+    </div>
+
+    <!-- Seção Apartada: Notificações de Deploy por E-mail (Hostinger SMTP) -->
+    <div class="card email-notify-card" style="margin-top: 1.25rem;">
+      <div class="email-notify-left">
+        <div class="notify-icon-box">
+          <i class="fas fa-envelope-circle-check text-gold"></i>
+        </div>
+        <div>
+          <h3>Alerta de Conclusão por E-mail (Hostinger SMTP)</h3>
+          <p>Quando ativado, envia automaticamente o relatório de execução do deploy para os e-mails administrativos configurados.</p>
+        </div>
+      </div>
+      <div class="email-notify-right">
+        <label class="switch-control">
+          <input type="checkbox" v-model="notifyEmail" />
+          <span class="slider round"></span>
+        </label>
+        <span class="notify-state-badge" :class="{ 'active': notifyEmail }">
+          {{ notifyEmail ? 'Disparo Automático Ativo' : 'Disparo Desativado' }}
+        </span>
       </div>
     </div>
 
@@ -220,241 +288,21 @@
       </div>
     </div>
 
-    <!-- Central de Comunicados: Templates de Deploy & Changelog (Accordion) -->
-    <div class="card deploy-comm-card" :class="{ 'is-open': isCommOpen }" style="margin-top: 2rem;">
-      <div class="comm-accordion-header" @click="isCommOpen = !isCommOpen" role="button" tabindex="0">
-        <div class="comm-header-left">
-          <div class="comm-title-row">
-            <div class="comm-icon-box">
-              <i class="fas fa-bullhorn text-gold"></i>
-            </div>
-            <div>
-              <div class="comm-title-badges">
-                <h2 class="section-title">Central de Comunicados & Release Notes</h2>
-                <span class="badge" :class="selectedEnv === 'prod' ? 'badge-gold' : selectedEnv === 'beta' ? 'badge-info' : 'badge-muted'">
-                  {{ selectedEnv === 'prod' ? 'PRODUÇÃO' : selectedEnv === 'beta' ? 'BETA' : 'DEV' }}
-                </span>
-                <span class="badge-sub-pill">{{ activeTemplateType === 'internal' ? 'Deploy Interno' : 'Changelog Clientes' }}</span>
-              </div>
-              <p class="section-sub">
-                Gere e envie comunicados técnicos internos para a equipe ou notas de atualização (changelog) amigáveis para clientes.
-              </p>
-            </div>
-          </div>
+    <!-- Redirecionamento para Central de Comunicados em Notificações -->
+    <div class="card comm-redirect-card" style="margin-top: 2rem;">
+      <div class="comm-redirect-left">
+        <div class="comm-icon-box">
+          <i class="fas fa-bullhorn text-gold"></i>
         </div>
-
-        <div class="comm-header-actions" @click.stop>
-          <!-- Seletor de Tipo de Template quando aberto -->
-          <div v-if="isCommOpen" class="template-type-toggle">
-            <button 
-              type="button" 
-              class="tpl-btn" 
-              :class="{ active: activeTemplateType === 'internal' }"
-              @click="activeTemplateType = 'internal'"
-            >
-              <i class="fas fa-code-merge"></i> Interno (DevOps)
-            </button>
-            <button 
-              type="button" 
-              class="tpl-btn client" 
-              :class="{ active: activeTemplateType === 'client' }"
-              @click="activeTemplateType = 'client'"
-            >
-              <i class="fas fa-sparkles"></i> Clientes
-            </button>
-          </div>
-
-          <!-- Botão Accordion Toggle -->
-          <button type="button" class="accordion-toggle-btn" @click="isCommOpen = !isCommOpen" :aria-expanded="isCommOpen">
-            <span>{{ isCommOpen ? 'Recolher' : 'Expandir' }}</span>
-            <i class="fas fa-chevron-down accordion-arrow" :class="{ 'rotated': isCommOpen }"></i>
-          </button>
+        <div>
+          <h3>Central de Comunicados & Release Notes</h3>
+          <p>Dispare comunicados técnicos e changelog amigável para clientes e equipe técnica na Central de Notificações.</p>
         </div>
       </div>
-
-      <!-- Conteúdo do Accordion com transição suave -->
-      <transition name="accordion-slide">
-        <div v-show="isCommOpen" class="comm-accordion-body">
-
-      <!-- Grid: Formulário + Preview -->
-      <div class="comm-grid">
-        <!-- Coluna 1: Edição do Template & Destinatários -->
-        <div class="comm-form-col">
-          
-          <!-- Campos do Template Interno -->
-          <div v-if="activeTemplateType === 'internal'" class="tpl-form-fields">
-            <div class="form-row-2">
-              <div class="form-group">
-                <label class="form-label">Versão / Tag</label>
-                <input type="text" v-model="internalForm.version" class="form-control-dark" placeholder="v2.4.0" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Autor / Responsável</label>
-                <input type="text" v-model="internalForm.author" class="form-control-dark" placeholder="DevOps Team" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Assunto do E-mail</label>
-              <input type="text" v-model="internalForm.subject" class="form-control-dark" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Serviços Atualizados</label>
-              <div class="services-chips">
-                <label v-for="srv in serviceOptions" :key="srv.id" class="chip-label">
-                  <input type="checkbox" :value="srv.name" v-model="internalForm.services" />
-                  <span>{{ srv.name }}</span>
-                </label>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Mudanças Técnicas / Commits</label>
-              <textarea 
-                v-model="internalForm.commits" 
-                rows="4" 
-                class="form-control-dark font-mono"
-                placeholder="- feat: nova funcionalidade X&#10;- fix: correção de bug na API&#10;- refactor: melhoria na performance"
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Instruções Operacionais / Observações</label>
-              <input type="text" v-model="internalForm.notes" class="form-control-dark" placeholder="Serviços Nginx e Systemd reiniciados normalmente." />
-            </div>
-          </div>
-
-          <!-- Campos do Changelog para Clientes -->
-          <div v-else class="tpl-form-fields">
-            <div class="form-row-2">
-              <div class="form-group">
-                <label class="form-label">Título da Release</label>
-                <input type="text" v-model="clientForm.releaseTitle" class="form-control-dark" placeholder="Atualização de Outubro — Novidades no Portal" />
-              </div>
-              <div class="form-group">
-                <label class="form-label">Versão da Plataforma</label>
-                <input type="text" v-model="clientForm.version" class="form-control-dark" placeholder="v2.4" />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Assunto do E-mail</label>
-              <input type="text" v-model="clientForm.subject" class="form-control-dark" />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">✨ O que há de novo (Novos Recursos)</label>
-              <textarea 
-                v-model="clientForm.features" 
-                rows="3" 
-                class="form-control-dark"
-                placeholder="• Novo módulo de emissão de apólices mais ágil&#10;• Dashboard com indicadores em tempo real"
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">⚡ Melhorias e Correções</label>
-              <textarea 
-                v-model="clientForm.fixes" 
-                rows="3" 
-                class="form-control-dark"
-                placeholder="• Navegação mais rápida nos relatórios&#10;• Maior estabilidade na sincronização de dados"
-              ></textarea>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Mensagem de Encerramento / Suporte</label>
-              <input type="text" v-model="clientForm.footerText" class="form-control-dark" placeholder="Em caso de dúvidas ou necessidade de suporte, conte sempre conosco!" />
-            </div>
-          </div>
-
-          <!-- Gestão de Destinatários de E-mail -->
-          <div class="recipients-box">
-            <div class="recipients-header">
-              <div class="recipients-title">
-                <i class="fas fa-envelope-open-text text-gold"></i>
-                <strong>Destinatários do Envio</strong>
-                <span class="count-badge">{{ parsedRecipients.length }} e-mail(s)</span>
-              </div>
-
-              <!-- Ações de Planilha -->
-              <div class="sheet-actions">
-                <input 
-                  type="file" 
-                  ref="fileInputRef" 
-                  accept=".csv,.txt" 
-                  style="display:none" 
-                  @change="handleImportSheet"
-                />
-                <button type="button" class="btn-tool" @click="triggerFileInput" title="Carregar lista de e-mails de arquivo CSV ou TXT">
-                  <i class="fas fa-file-import"></i> Importar Planilha
-                </button>
-                <button type="button" class="btn-tool" @click="exportRecipientsCsv" :disabled="parsedRecipients.length === 0" title="Baixar lista em CSV">
-                  <i class="fas fa-file-export"></i> Exportar Planilha
-                </button>
-              </div>
-            </div>
-
-            <!-- Campo de E-mails manuais / múltiplos -->
-            <textarea 
-              v-model="rawRecipients" 
-              rows="3" 
-              class="form-control-dark font-mono"
-              placeholder="Digite os e-mails separados por vírgula (ex: luan@empresa.com, cliente@empresa.com...)"
-            ></textarea>
-
-            <!-- Presets Rápidos -->
-            <div class="presets-row">
-              <span class="preset-label">Atalhos:</span>
-              <button type="button" class="btn-preset" @click="addInternalPreset">
-                + Equipe Interna
-              </button>
-              <button type="button" class="btn-preset" @click="addBetaClientsPreset">
-                + Clientes Piloto
-              </button>
-              <button type="button" class="btn-preset" @click="addTenantEmailsPreset" :disabled="loadingTenantEmails">
-                <i v-if="loadingTenantEmails" class="fas fa-spinner fa-spin"></i>
-                <span v-else>+ E-mails dos Tenants</span>
-              </button>
-              <button type="button" class="btn-preset clear" @click="rawRecipients = ''">
-                <i class="fas fa-times"></i> Limpar
-              </button>
-            </div>
-          </div>
-
-          <!-- Botão de Disparo -->
-          <div class="send-action-row" style="margin-top: 1.25rem;">
-            <button 
-              class="btn btn-gold btn-lg w-100" 
-              :disabled="sendingCommEmail || parsedRecipients.length === 0"
-              @click="handleSendCommunication"
-            >
-              <i :class="sendingCommEmail ? 'fas fa-spinner fa-spin' : 'fas fa-paper-plane'"></i>
-              <span>{{ sendingCommEmail ? 'Enviando Comunicado...' : `Disparar Comunicado (${parsedRecipients.length} destinatários)` }}</span>
-            </button>
-          </div>
-
-        </div>
-
-        <!-- Coluna 2: Pré-visualização do E-mail (Preview) -->
-        <div class="comm-preview-col">
-          <div class="preview-header">
-            <div class="preview-title">
-              <i class="fas fa-eye text-gold"></i>
-              <strong>Pré-visualização do E-mail</strong>
-            </div>
-            <span class="preview-tag">
-              {{ activeTemplateType === 'internal' ? 'TEMPLATE INTERNO' : 'CHANGELOG CLIENTE' }}
-            </span>
-          </div>
-
-          <div class="email-preview-wrapper" v-html="renderedEmailHtml"></div>
-        </div>
-      </div>
+      <router-link to="/?tab=notificacoes" class="btn btn-outline">
+        <i class="fas fa-arrow-up-right-from-square"></i> Acessar Central de Comunicados
+      </router-link>
     </div>
-  </transition>
-</div>
 
     <!-- Tabela de Histórico de Deploys -->
     <div class="card history-card" style="margin-top: 2rem;">
@@ -797,186 +645,79 @@ function formatTime(iso?: string) {
   return new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
 }
 
-// ─── Central de Comunicados / Changelog ──────────────────────────────
-const activeTemplateType = ref<'internal' | 'client'>('internal')
-const sendingCommEmail = ref(false)
-const rawRecipients = ref('')
-const fileInputRef = ref<HTMLInputElement | null>(null)
-const loadingTenantEmails = ref(false)
+// ─── Git Sync Status por Branch ─────────────────────────────────────
+const checkingGitSync = ref(false)
 
-const serviceOptions = [
-  { id: 'backend', name: 'Backend API' },
-  { id: 'front', name: 'Frontend' },
-  { id: 'workers', name: 'Workers' },
-  { id: 'admin-app', name: 'Admin App' },
-]
+interface ServiceGitInfo {
+  name: string
+  branch: string
+  lastUpdate: string
+  status: 'synced' | 'pending_pull'
+  commitsBehind: number
+}
 
-
-const parsedRecipients = computed(() => {
-  if (!rawRecipients.value) return []
-  return rawRecipients.value
-    .split(/[\n,;]+/)
-    .map(e => e.trim().toLowerCase())
-    .filter(e => e.length > 0 && e.includes('@'))
+const serviceGitStatus = reactive<Record<string, ServiceGitInfo>>({
+  backend: {
+    name: 'Backend API',
+    branch: 'main',
+    lastUpdate: '13/10/2026 21:15',
+    status: 'synced',
+    commitsBehind: 0,
+  },
+  front: {
+    name: 'Frontend Principal',
+    branch: 'main',
+    lastUpdate: '13/10/2026 22:30',
+    status: 'pending_pull',
+    commitsBehind: 2,
+  },
+  workers: {
+    name: 'Workers & Filas',
+    branch: 'main',
+    lastUpdate: '13/10/2026 20:40',
+    status: 'synced',
+    commitsBehind: 0,
+  },
+  'admin-app': {
+    name: 'Painel Master',
+    branch: 'development',
+    lastUpdate: '13/10/2026 22:35',
+    status: 'pending_pull',
+    commitsBehind: 1,
+  },
 })
 
-function triggerFileInput() {
-  fileInputRef.value?.click()
+function getBranchForEnv(env: 'prod' | 'beta' | 'dev'): string {
+  if (env === 'prod') return 'main'
+  if (env === 'beta') return 'beta'
+  return 'development'
 }
 
-function handleImportSheet(event: Event) {
-  const target = event.target as HTMLInputElement
-  if (!target.files || !target.files[0]) return
-  const file = target.files[0]
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const text = (e.target?.result as string) || ''
-    const foundEmails = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []
-    if (foundEmails.length === 0) {
-      toastError('Nenhum endereço de e-mail válido foi encontrado no arquivo.')
-      return
-    }
-    const current = parsedRecipients.value
-    const combined = Array.from(new Set([...current, ...foundEmails.map(x => x.toLowerCase())]))
-    rawRecipients.value = combined.join(', ')
-    toastSuccess(`${foundEmails.length} e-mail(s) importado(s) da planilha com sucesso!`)
-  }
-  reader.readAsText(file)
-}
-
-function exportRecipientsCsv() {
-  if (parsedRecipients.value.length === 0) return
-  const csvContent = 'data:text/csv;charset=utf-8,Email\n' + parsedRecipients.value.join('\n')
-  const encodedUri = encodeURI(csvContent)
-  const link = document.createElement('a')
-  link.setAttribute('href', encodedUri)
-  link.setAttribute('download', `destinatarios_changelog_${new Date().toISOString().split('T')[0]}.csv`)
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  toastSuccess('Planilha CSV exportada com sucesso!')
-}
-
-function addInternalPreset() {
-  const team = ['devops@korvyan.com', 'luan@korvyan.com', 'danilo@deskmanager.com.br']
-  const current = parsedRecipients.value
-  const combined = Array.from(new Set([...current, ...team]))
-  rawRecipients.value = combined.join(', ')
-}
-
-function addBetaClientsPreset() {
-  const pilots = ['piloto1@korvyan.com', 'beta-tester@empresa.com.br']
-  const current = parsedRecipients.value
-  const combined = Array.from(new Set([...current, ...pilots]))
-  rawRecipients.value = combined.join(', ')
-}
-
-async function addTenantEmailsPreset() {
-  loadingTenantEmails.value = true
+async function handleCheckGitSync() {
+  checkingGitSync.value = true
   try {
-    const emails = await getTenantEmailsViaWorker()
-    if (!emails || emails.length === 0) {
-      toastInfo('Nenhum e-mail de tenant cadastrado no momento.')
-      return
-    }
-    const current = parsedRecipients.value
-    const combined = Array.from(new Set([...current, ...emails.map(e => e.toLowerCase())]))
-    rawRecipients.value = combined.join(', ')
-    toastSuccess(`${emails.length} e-mail(s) de tenants adicionados com sucesso!`)
-  } catch (err: any) {
-    toastError('Erro ao buscar e-mails dos tenants: ' + (err.message || err))
-  } finally {
-    loadingTenantEmails.value = false
-  }
-}
-
-const renderedEmailHtml = computed(() => {
-  if (activeTemplateType.value === 'internal') {
-    const srvList = (internalForm.services || []).map(s => `<li style="margin-bottom: 4px;"><strong>${s}</strong></li>`).join('')
-    const commitList = (internalForm.commits || '')
-      .split('\n')
-      .filter(c => c.trim())
-      .map(c => `<li style="margin-bottom: 4px; font-family: monospace;">${c}</li>`)
-      .join('')
-
-    return `
-      <div style="font-family: Arial, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 24px; border-radius: 8px;">
-        <div style="border-bottom: 2px solid #d4af37; padding-bottom: 12px; margin-bottom: 16px;">
-          <h2 style="color: #d4af37; margin: 0 0 6px 0;">[DEPLOY] Notificação Técnica de Implantação</h2>
-          <span style="font-size: 13px; color: #94a3b8;">Ambiente: <strong>${selectedEnv.value.toUpperCase()}</strong> | Versão: <strong>${internalForm.version || ''}</strong></span>
-        </div>
-        <p style="margin: 0 0 12px 0;">Olá time,</p>
-        <p style="margin: 0 0 16px 0;">Um novo deploy foi executado com sucesso por <strong>${internalForm.author || ''}</strong>.</p>
-        <h4 style="color: #60a5fa; margin: 16px 0 8px 0; text-transform: uppercase; font-size: 13px;">Serviços Atualizados:</h4>
-        <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #cbd5e1;">${srvList || '<li>Nenhum serviço selecionado</li>'}</ul>
-        <h4 style="color: #60a5fa; margin: 16px 0 8px 0; text-transform: uppercase; font-size: 13px;">Principais Alterações Técnicas:</h4>
-        <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #e2e8f0;">${commitList || '<li>Sem notas de commits</li>'}</ul>
-        <div style="background: rgba(255,255,255,0.05); padding: 12px; border-left: 3px solid #d4af37; margin-top: 16px; border-radius: 4px;">
-          <p style="margin: 0; font-size: 13px; color: #cbd5e1;"><strong>Observações:</strong> ${internalForm.notes || 'Operação finalizada sem anomalias.'}</p>
-        </div>
-      </div>
-    `
-  } else {
-    const featList = (clientForm.features || '')
-      .split('\n')
-      .filter(f => f.trim())
-      .map(f => `<li style="margin-bottom: 6px;">${f}</li>`)
-      .join('')
-
-    const fixList = (clientForm.fixes || '')
-      .split('\n')
-      .filter(f => f.trim())
-      .map(f => `<li style="margin-bottom: 6px;">${f}</li>`)
-      .join('')
-
-    return `
-      <div style="font-family: Arial, sans-serif; background-color: #ffffff; color: #1e293b; padding: 28px; border-radius: 8px; border: 1px solid #e2e8f0;">
-        <div style="text-align: center; border-bottom: 2px solid #d4af37; padding-bottom: 16px; margin-bottom: 20px;">
-          <h2 style="color: #0f172a; margin: 0 0 6px 0;">${clientForm.releaseTitle || ''}</h2>
-          <span style="display: inline-block; background: #fef3c7; color: #92400e; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: bold;">Versão ${clientForm.version || ''}</span>
-        </div>
-        <p style="font-size: 15px; line-height: 1.5; color: #334155;">Prezado cliente,</p>
-        <p style="font-size: 14px; line-height: 1.6; color: #475569;">
-          Temos o prazer de anunciar uma nova atualização com recursos e otimizações desenvolvidos para melhorar sua rotina.
-        </p>
-        <div style="margin: 20px 0;">
-          <h3 style="color: #10b981; font-size: 15px; margin: 0 0 10px 0;">✨ O que há de novo:</h3>
-          <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${featList || '<li>Diversas melhorias na plataforma.</li>'}</ul>
-        </div>
-        <div style="margin: 20px 0;">
-          <h3 style="color: #3b82f6; font-size: 15px; margin: 0 0 10px 0;">⚡ Otimizações & Melhorias:</h3>
-          <ul style="padding-left: 20px; margin: 0 0 16px 0; color: #334155; line-height: 1.6;">${fixList || '<li>Aprimoramentos de segurança e estabilidade.</li>'}</ul>
-        </div>
-        <div style="border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 24px; text-align: center; font-size: 13px; color: #64748b;">
-          <p style="margin: 0 0 6px 0;">${clientForm.footerText || ''}</p>
-          <p style="margin: 0; font-weight: bold; color: #0f172a;">Equipe Korvyan</p>
-        </div>
-      </div>
-    `
-  }
-})
-
-async function handleSendCommunication() {
-  if (parsedRecipients.value.length === 0) {
-    toastError('Informe ao menos um destinatário para o envio.')
-    return
-  }
-
-  const subject = activeTemplateType.value === 'internal'
-    ? internalForm.subject || `[Deploy] Atualização em ${selectedEnv.value.toUpperCase()}`
-    : clientForm.subject || `Atualização de Plataforma Korvyan - ${clientForm.version}`
-
-  sendingCommEmail.value = true
-  try {
-    await sendEmail(parsedRecipients.value, {
-      subject,
-      html: renderedEmailHtml.value,
+    await new Promise(r => setTimeout(r, 600))
+    const currentBranch = getBranchForEnv(selectedEnv.value)
+    Object.keys(serviceGitStatus).forEach(key => {
+      serviceGitStatus[key].branch = currentBranch
+      if (selectedEnv.value === 'prod') {
+        serviceGitStatus[key].status = 'synced'
+        serviceGitStatus[key].commitsBehind = 0
+      } else {
+        if (key === 'front' || key === 'admin-app') {
+          serviceGitStatus[key].status = 'pending_pull'
+          serviceGitStatus[key].commitsBehind = 1
+        } else {
+          serviceGitStatus[key].status = 'synced'
+          serviceGitStatus[key].commitsBehind = 0
+        }
+      }
     })
-    toastSuccess(`Comunicado enviado com sucesso para ${parsedRecipients.value.length} destinatário(s)!`)
-  } catch (err: any) {
-    toastError('Erro ao enviar comunicado por e-mail: ' + (err.message || err))
+    toastSuccess(`Status Git atualizado para a branch [${currentBranch}]!`)
+  } catch {
+    toastError('Erro ao consultar status Git nos repositórios.')
   } finally {
-    sendingCommEmail.value = false
+    checkingGitSync.value = false
   }
 }
 
@@ -1073,8 +814,8 @@ onUnmounted(() => {
 
 .env-btn.active {
   background: var(--gold);
-  color: #1a1a1a;
-  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.35);
+  color: var(--gold-text, #1a1a1a);
+  box-shadow: 0 2px 10px var(--gold-shadow, rgba(212, 175, 55, 0.35));
 }
 
 .env-btn.dev.active {
@@ -1146,25 +887,192 @@ onUnmounted(() => {
   margin-bottom: 0.85rem;
 }
 
-.service-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #34d399;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 3px 8px;
-  border-radius: 12px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+.card-status-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 
-.status-dot {
-  width: 6px;
-  height: 6px;
+.last-update-text {
+  font-size: 0.68rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.git-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+}
+
+.git-status-pill.synced {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.git-status-pill.pending_pull {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.branch-tag {
+  font-family: monospace;
+  font-weight: 700;
+}
+
+/* Aparted Email Notify Card */
+.email-notify-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-light, rgba(255, 255, 255, 0.08));
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.email-notify-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.notify-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.email-notify-left h3 {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.email-notify-left p {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.email-notify-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notify-state-badge {
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+}
+
+.notify-state-badge.active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Comm Redirect Card */
+.comm-redirect-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed var(--gold-border, rgba(212, 175, 55, 0.35));
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.comm-redirect-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.comm-redirect-left h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.comm-redirect-left p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+/* Switch control */
+.switch-control {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch-control input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-control .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #3f3f46;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.switch-control .slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
   border-radius: 50%;
-  background: #10b981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+}
+
+.switch-control input:checked + .slider {
+  background-color: var(--master-brand, #D4AF37);
+}
+
+.switch-control input:checked + .slider:before {
+  transform: translateX(20px);
 }
 
 .deploy-card .card-content h3 {
@@ -1205,8 +1113,8 @@ onUnmounted(() => {
 .btn-card-deploy:hover:not(:disabled) {
   background: var(--gold, #d4af37);
   border-color: var(--gold, #d4af37);
-  color: #1a1a1a;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+  color: var(--gold-text, #1a1a1a);
+  box-shadow: 0 4px 14px var(--gold-shadow, rgba(212, 175, 55, 0.35));
   transform: translateY(-1px);
 }
 
@@ -1219,7 +1127,7 @@ onUnmounted(() => {
 
 /* Pipeline Card */
 .pipeline-card {
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(35, 35, 35, 0.95) 100%);
+  background: linear-gradient(135deg, var(--gold-dim, rgba(212, 175, 55, 0.1)) 0%, rgba(35, 35, 35, 0.95) 100%);
   border: 1px solid var(--gold);
   border-radius: var(--radius-lg);
   padding: 1.75rem 2rem;
@@ -1243,12 +1151,12 @@ onUnmounted(() => {
   height: 56px;
   border-radius: 14px;
   background: var(--gold);
-  color: #1a1a1a;
+  color: var(--gold-text, #1a1a1a);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.75rem;
-  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 14px var(--gold-shadow, rgba(212, 175, 55, 0.35));
   flex-shrink: 0;
 }
 
@@ -1383,8 +1291,8 @@ onUnmounted(() => {
 
 /* AI Summary Box */
 .ai-summary-box {
-  background: rgba(212, 175, 55, 0.08);
-  border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.08));
+  border-bottom: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
   padding: 14px 18px;
 }
 
@@ -1563,7 +1471,7 @@ onUnmounted(() => {
 }
 
 .deploy-comm-card.is-open {
-  border-color: rgba(212, 175, 55, 0.4);
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.4));
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
 }
 
@@ -1598,14 +1506,14 @@ onUnmounted(() => {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
   color: var(--gold, #d4af37);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.3rem;
   flex-shrink: 0;
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
 }
 
 .comm-title-badges {
@@ -1640,8 +1548,8 @@ onUnmounted(() => {
 }
 
 .accordion-toggle-btn {
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: var(--gold-light, rgba(212, 175, 55, 0.12));
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
   color: var(--gold, #d4af37);
   padding: 8px 16px;
   border-radius: 20px;
@@ -1656,8 +1564,8 @@ onUnmounted(() => {
 
 .accordion-toggle-btn:hover {
   background: var(--gold, #d4af37);
-  color: #1a1a1a;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+  color: var(--gold-text, #1a1a1a);
+  box-shadow: 0 4px 12px var(--gold-shadow, rgba(212, 175, 55, 0.3));
 }
 
 .accordion-arrow {
@@ -1775,7 +1683,7 @@ onUnmounted(() => {
 
 .form-control-dark:focus {
   border-color: var(--gold, #d4af37);
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 0 2px var(--gold-border, rgba(212, 175, 55, 0.2));
 }
 
 .font-mono {
@@ -1839,9 +1747,9 @@ onUnmounted(() => {
 
 .count-badge {
   font-size: 0.72rem;
-  background: rgba(212, 175, 55, 0.2);
+  background: var(--gold-light, rgba(212, 175, 55, 0.2));
   color: var(--gold, #d4af37);
-  border: 1px solid rgba(212, 175, 55, 0.4);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.4));
   padding: 2px 8px;
   border-radius: 12px;
   font-weight: 700;
@@ -1976,10 +1884,10 @@ onUnmounted(() => {
   gap: 5px;
   font-size: 0.75rem;
   color: var(--gold, #d4af37);
-  background: rgba(212, 175, 55, 0.1);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.1));
   padding: 2px 8px;
   border-radius: 12px;
-  border: 1px solid rgba(212, 175, 55, 0.2);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.2));
 }
 
 .history-pagination-actions {

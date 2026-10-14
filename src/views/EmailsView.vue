@@ -626,7 +626,7 @@ async function sendTest() {
 .tenant-card.active {
   border-color: var(--gold);
   background: var(--gold-dim, rgba(212, 175, 55, 0.12));
-  box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 0 14px var(--gold-border, rgba(212, 175, 55, 0.25));
 }
 .tenant-card-top {
   display: flex;

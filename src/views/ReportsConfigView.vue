@@ -434,8 +434,8 @@ onMounted(() => {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: rgba(212, 175, 55, 0.12);
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: var(--gold-light, rgba(212, 175, 55, 0.12));
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -470,9 +470,9 @@ onMounted(() => {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(212, 175, 55, 0.12);
+  background: var(--gold-light, rgba(212, 175, 55, 0.12));
   color: var(--gold, #d4af37);
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
   font-family: monospace;
 }
 

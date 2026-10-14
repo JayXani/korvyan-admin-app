@@ -314,7 +314,7 @@ const vClickOutside = {
   transition: all 0.2s;
 }
 .datepicker-input:hover:not(.is-disabled) { border-color: var(--gold-light); }
-.datepicker-input.is-active { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212,175,55,0.2); }
+.datepicker-input.is-active { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-border, rgba(212,175,55,0.2)); }
 .datepicker-input.is-disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -354,7 +354,7 @@ const vClickOutside = {
   transition: background 0.2s, color 0.2s;
 }
 .calendar-trigger-btn:hover:not(:disabled) {
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
 }
 .calendar-trigger-btn:disabled {
   cursor: not-allowed;

@@ -35,9 +35,14 @@
             <td colspan="6" class="empty-state"><i class="fas fa-spinner fa-spin"></i></td>
           </tr>
           <tr v-else-if="!filteredKeys.length">
-            <td colspan="6" class="empty-state">
-              <i class="fas fa-key"></i>
-              <p>Nenhuma chave de API encontrada.</p>
+            <td colspan="6" class="empty-state-cell" style="text-align: center; padding: 4rem 1rem;">
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; text-align: center;">
+                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--gold-dim, rgba(212, 175, 55, 0.1)); border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25)); display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 1.5rem;">
+                  <i class="fas fa-key"></i>
+                </div>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.95rem; font-weight: 500; text-align: center;">Nenhuma chave de API encontrada.</p>
+                <p style="margin: 0; color: var(--text-muted); font-size: 0.8rem; opacity: 0.7; text-align: center;">Clique em "Nova Chave" acima para autorizar sistemas e integrações externas.</p>
+              </div>
             </td>
           </tr>
           <tr v-for="key in filteredKeys" :key="key.api_id || key.api_name" v-else>
@@ -284,6 +289,11 @@ async function handleCreateKey() {
     generatedSecretToken.value = created.api_key_hash || created.api_id || 'ak_' + Math.random().toString(36).substring(2)
     copied.value = false
     createdSecretModal.value = true
+
+    // Adiciona imediatamente à lista local
+    if (!apiKeys.value.some(k => k.api_id === created.api_id)) {
+      apiKeys.value.unshift(created)
+    }
 
     success('Chave de API gerada com sucesso!')
     await loadKeys()

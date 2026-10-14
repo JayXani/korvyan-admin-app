@@ -64,7 +64,7 @@ const { confirmState, accept, cancel } = useConfirm()
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: rgba(212, 175, 55, 0.12);
+  background: var(--gold-light, rgba(212, 175, 55, 0.12));
   color: var(--gold);
   display: flex;
   align-items: center;

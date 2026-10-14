@@ -472,12 +472,12 @@ onUnmounted(() => {
 .card { background: var(--bg-bo-card, #1e293b); border-radius: var(--radius-lg); padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,.05); border: 1px solid var(--border-bo, #334155); }
 
 /* Avatar */
-.user-avatar { width:34px;height:34px;border-radius:50%;background:var(--gold);color:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0; }
+.user-avatar { width:34px;height:34px;border-radius:50%;background:var(--gold-gradient, var(--gold));color:var(--gold-text, #1a1a1a);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0; }
 
 /* Badges */
 .action-badge { display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;font-size:.75rem;font-weight:700;letter-spacing:.3px;white-space:nowrap; }
 .action-green { background:rgba(61,186,111,.15);color:var(--success); }
-.action-gold  { background:rgba(212,175,55,.15); color:var(--gold); }
+.action-gold  { background:var(--gold-light, rgba(212,175,55,.15)); color:var(--gold); }
 .action-blue  { background:rgba(77,166,255,.15); color:#4DA6FF; }
 .action-gray  { background:rgba(153,153,153,.15);color:var(--text-muted); }
 .action-red   { background:rgba(224,82,82,.15);  color:var(--danger); }

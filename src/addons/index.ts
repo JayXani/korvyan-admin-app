@@ -54,6 +54,8 @@ export const ADDONS_REGISTRY: AddonMeta[] = [
     color: '#f472b6',
     description: 'Minutas de contratos e cláusulas geradas automaticamente por IA',
   },
+  // DOCUMENTADO: Possível ideia futura: Detector de Fraudes IA para auditoria e risco preditivo de sinistros
+  /*
   {
     key: 'ai_fraud',
     name: 'Detector de Fraudes IA',
@@ -62,6 +64,9 @@ export const ADDONS_REGISTRY: AddonMeta[] = [
     color: '#f87171',
     description: 'Auditoria preditiva de sinistros e detecção de anomalias',
   },
+  */
+  // DOCUMENTADO: Possível ideia futura: Bot WhatsApp para lembretes automatizados de boletos e vencimentos
+  /*
   {
     key: 'whatsapp_bot',
     name: 'Bot WhatsApp',
@@ -70,6 +75,9 @@ export const ADDONS_REGISTRY: AddonMeta[] = [
     color: '#25D366',
     description: 'Lembretes automatizados de boletos e vencimentos no WhatsApp',
   },
+  */
+  // DOCUMENTADO: Possível ideia futura: Assinatura Digital com validade jurídica integrada aos contratos
+  /*
   {
     key: 'digital_signature',
     name: 'Assinatura Digital',
@@ -77,6 +85,15 @@ export const ADDONS_REGISTRY: AddonMeta[] = [
     icon: 'fas fa-pen-nib',
     color: '#0ea5e9',
     description: 'Assinatura digital com validade jurídica integrada aos contratos',
+  },
+  */
+  {
+    key: 'user_email_dispatch',
+    name: 'Disparo de E-mails via Portal do Usuário',
+    shortName: 'E-mails Portal',
+    icon: 'fas fa-paper-plane',
+    color: '#38bdf8',
+    description: 'Disparo de e-mails diretamente pelo portal do usuário (solicitantes, cobranças e avisos)',
   },
   {
     key: 'custom_domain',

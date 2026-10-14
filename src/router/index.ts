@@ -38,6 +38,10 @@ const router = createRouter({
       redirect: '/?tab=reports-config',
     },
     {
+      path: '/masters',
+      redirect: '/',
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/',
     },

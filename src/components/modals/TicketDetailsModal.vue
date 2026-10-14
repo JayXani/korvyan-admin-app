@@ -1057,9 +1057,9 @@ function formatDateTime(d?: any) {
   font-family: monospace;
   font-size: 0.78rem;
   font-weight: 700;
-  background: rgba(212, 175, 55, 0.12);
+  background: var(--gold-light, rgba(212, 175, 55, 0.12));
   color: var(--gold, #d4af37);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
   padding: 2px 8px;
   border-radius: 6px;
   letter-spacing: 0.5px;
@@ -1299,9 +1299,9 @@ function formatDateTime(d?: any) {
 }
 
 .support-avatar {
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
   color: var(--gold, #d4af37);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
 }
 
 .user-avatar-msg {
@@ -1325,8 +1325,8 @@ function formatDateTime(d?: any) {
 }
 
 .user-bubble {
-  background: rgba(212, 175, 55, 0.1);
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.1));
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
   border-top-right-radius: 2px;
 }
 
@@ -1347,7 +1347,7 @@ function formatDateTime(d?: any) {
   font-size: 0.65rem;
   font-weight: 800;
   color: var(--gold, #d4af37);
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
   padding: 1px 6px;
   border-radius: 4px;
 }
@@ -1469,8 +1469,8 @@ function formatDateTime(d?: any) {
 }
 
 .support-bubble .attachment-card {
-  background: rgba(212, 175, 55, 0.08);
-  border-color: rgba(212, 175, 55, 0.22);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.08));
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.22));
 }
 
 .attachment-card.is-expired {
@@ -1538,9 +1538,9 @@ function formatDateTime(d?: any) {
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
   color: var(--gold, #d4af37);
-  border: 1px solid rgba(212, 175, 55, 0.35);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.35));
   text-decoration: none;
   font-size: 0.85rem;
   transition: all 0.2s ease;
@@ -1572,7 +1572,7 @@ function formatDateTime(d?: any) {
 .attach-clip-btn:hover:not(:disabled) {
   border-color: var(--gold, #d4af37);
   color: var(--gold, #d4af37);
-  background: rgba(212, 175, 55, 0.08);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.08));
 }
 
 .attach-clip-btn:disabled {
@@ -1585,8 +1585,8 @@ function formatDateTime(d?: any) {
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
-  background: rgba(212, 175, 55, 0.08);
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.08));
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
   border-radius: 8px;
   font-size: 0.8rem;
   gap: 8px;

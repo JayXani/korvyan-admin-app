@@ -37,11 +37,6 @@
         <span>Chaves de API</span>
       </router-link>
 
-      <router-link to="/masters" class="nav-item">
-        <i class="fas fa-user-shield"></i>
-        <span>Operadores Master</span>
-      </router-link>
-
       <div class="sidebar-section-title" style="margin-top: 1.5rem">MONITORAMENTO</div>
 
       <router-link to="/observability" class="nav-item">
@@ -127,14 +122,14 @@ async function handleLogout() {
 .brand-logo {
   width: 38px;
   height: 38px;
-  background: linear-gradient(135deg, var(--gold) 0%, #997819 100%);
+  background: var(--gold-gradient, linear-gradient(135deg, var(--gold) 0%, #997819 100%));
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1a1a1a;
+  color: var(--gold-text, #1a1a1a);
   font-size: 1.2rem;
-  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 4px 12px var(--gold-border, rgba(212, 175, 55, 0.25));
 }
 
 .brand-text {

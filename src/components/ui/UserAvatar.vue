@@ -110,7 +110,7 @@ const avatarStyle = computed(() => {
   overflow: hidden;
   user-select: none;
   flex-shrink: 0;
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
   box-shadow: 0 2px 4px rgba(0,0,0,0.15);
   transition: transform 0.2s ease, border-color 0.2s ease;
 }

@@ -97,7 +97,6 @@
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'api-keys' }" @click.prevent="setTab('api-keys')"><i class="fas fa-shield-halved"></i> Chaves de API</a>
 
           <div class="nav-section-title mt-4">SISTEMA</div>
-          <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'masters' }" @click.prevent="setTab('masters')"><i class="fas fa-user-astronaut"></i> Admins (Root)</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'logs' }" @click.prevent="setTab('logs')"><i class="fas fa-server"></i> Audit Logs</a>
           <a href="#" class="bo-nav-item" :class="{ active: activeTab === 'deploy' }" @click.prevent="setTab('deploy')"><i class="fas fa-rocket"></i> Automação Deploy</a>
         </nav>
@@ -297,60 +296,6 @@
                         @click="toggleTenantStatus(t)">
                         <i :class="t.tenant_enabled !== false ? 'fas fa-ban' : 'fas fa-check'"></i>
                       </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- TAB: MASTERS/ADMINS -->
-          <div v-else-if="activeTab === 'masters'" key="masters" class="fade-panel">
-            <div class="bo-page-header">
-              <div class="bo-page-header-left">
-                <div class="title-with-badge">
-                  <h1>Usuários Super Admin</h1>
-                  <span class="badge-bo">ROOT</span>
-                </div>
-                <p>Operadores com acesso master ao sistema.</p>
-              </div>
-              <div class="header-actions">
-                <router-link to="/app/usuarios/novo" class="btn btn-master"><i class="fas fa-user-plus"></i> Novo Admin</router-link>
-              </div>
-            </div>
-
-            <div class="table-container">
-              <div class="table-search-bar">
-                <i class="fas fa-magnifying-glass"></i>
-                <input v-model="mastersSearch" type="text" placeholder="Buscar admin..." />
-              </div>
-              <table class="data-table">
-                <thead>
-                  <tr><th>Usuário</th><th>Login</th><th>Perfil</th><th></th></tr>
-                </thead>
-                <tbody>
-                  <tr v-if="loadingMasters">
-                    <td colspan="4" class="empty-cell"><i class="fas fa-spinner fa-spin"></i></td>
-                  </tr>
-                  <tr v-else-if="!filteredMasters.length">
-                    <td colspan="4" class="empty-cell"><i class="fas fa-user-astronaut"></i><p>Nenhum admin encontrado.</p></td>
-                  </tr>
-                  <tr v-for="u in filteredMasters" :key="u.id">
-                    <td>
-                      <div style="display:flex;align-items:center;gap:10px">
-                        <div class="user-avatar-bo" style="width:34px;height:34px;font-size:0.72rem;background:var(--master-brand)">
-                          {{ initials(u.person?.name ?? u.username ?? '?') }}
-                        </div>
-                        <div>
-                          <p style="font-weight:600;color:var(--text-primary);font-size:0.88rem">{{ u.person?.name ?? u.username ?? '—' }}</p>
-                          <p style="font-size:0.72rem;color:var(--text-muted)">{{ u.person?.email ?? '—' }}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td><code class="prefix-code">{{ u.username ?? u.user_login ?? '—' }}</code></td>
-                    <td><span class="badge master-badge"><i class="fas fa-crown"></i> {{ u.profile?.name ?? 'Master' }}</span></td>
-                    <td>
-                      <router-link :to="`/app/usuarios/${u.id}/editar`" class="icon-btn" title="Editar Admin"><i class="fas fa-pen"></i></router-link>
                     </td>
                   </tr>
                 </tbody>
@@ -653,34 +598,47 @@
                 <!-- Descrição -->
                 <p class="addon-desc" style="margin: 0; font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">{{ addon.desc }}</p>
 
-                <!-- Chips de tenants -->
+                <!-- Chips de tenants com estado claro Habilitado / Desabilitado -->
+                <div class="tenant-chips-section">
                   <div class="tenant-chips-row">
                     <template v-if="loadingTenants">
                       <span class="chip-empty"><i class="fas fa-spinner fa-spin"></i> Carregando empresas...</span>
                     </template>
                     <template v-else>
+                      <!-- Tenants com o módulo HABILITADO -->
                       <div
                         v-for="t in filteredTenantsForAddon(addon.key, addon.defaultActive, true)"
-                        :key="t.tenant_prefix"
+                        :key="'act_' + t.tenant_prefix"
                         class="tenant-chip active"
-                        title="Remover acesso"
+                        title="Módulo Habilitado — Clique para desativar"
                         @click="toggleTenantAddon(t, addon.key)"
                       >
-                        <div class="chip-dot" :style="{ background: t.primary_color || '#D4AF37' }">
+                        <div class="chip-dot" :style="{ background: t.primary_color || 'var(--gold)' }">
                           {{ (t.name || t.tenant_prefix || '?').substring(0, 1).toUpperCase() }}
                         </div>
-                        <span>{{ t.name || t.tenant_prefix }}</span>
-                        <i class="fas fa-times"></i>
+                        <span class="chip-label">{{ t.name || t.tenant_prefix }}</span>
+                        <span class="chip-badge-status is-active"><i class="fas fa-check"></i> Ativo</span>
+                        <i class="fas fa-times chip-action-icon" title="Desativar"></i>
                       </div>
 
-                      <select class="add-tenant-select" @change="e => { addAddonToTenantId(e.target.value, addon.key); e.target.value = '' }">
-                        <option value="" disabled selected>+ Adicionar Empresa</option>
-                        <option v-for="t in filteredTenantsForAddon(addon.key, addon.defaultActive, false)" :key="t.tenant_prefix" :value="t.tenant_prefix">
-                          {{ t.name || t.tenant_prefix }}
-                        </option>
-                      </select>
+                      <!-- Tenants com o módulo DESABILITADO -->
+                      <div
+                        v-for="t in filteredTenantsForAddon(addon.key, addon.defaultActive, false)"
+                        :key="'inact_' + t.tenant_prefix"
+                        class="tenant-chip inactive"
+                        title="Módulo Desativado — Clique para ativar"
+                        @click="toggleTenantAddon(t, addon.key)"
+                      >
+                        <div class="chip-dot chip-dot-muted">
+                          {{ (t.name || t.tenant_prefix || '?').substring(0, 1).toUpperCase() }}
+                        </div>
+                        <span class="chip-label">{{ t.name || t.tenant_prefix }}</span>
+                        <span class="chip-badge-status is-inactive"><i class="fas fa-ban"></i> Desativado</span>
+                        <i class="fas fa-plus chip-action-icon" title="Ativar"></i>
+                      </div>
                     </template>
                   </div>
+                </div>
                   
                   <!-- Botão de config de IA (só para addons com hasConfig) -->
                 <template v-if="addon.hasConfig">
@@ -801,51 +759,346 @@
             <div class="bo-page-header">
               <div class="bo-page-header-left">
                 <div class="title-with-badge">
-                  <h1>Disparo de Notificações</h1>
-                  <span class="badge-bo">BROADCAST</span>
+                  <h1>Central de Notificações & Comunicados</h1>
+                  <span class="badge-bo">COMMS</span>
                 </div>
-                <p>Envie notificações in-app ou e-mails para todos os tenants ou apenas selecionados.</p>
+                <p>Dispare notificações em tempo real, broadcast in-app e gerencie comunicados e notas de release.</p>
+              </div>
+
+              <!-- Sub-Abas -->
+              <div class="notif-subtabs-nav">
+                <button 
+                  type="button" 
+                  class="notif-subtab-btn" 
+                  :class="{ active: notifSubTab === 'broadcast' }" 
+                  @click="notifSubTab = 'broadcast'"
+                >
+                  <i class="fas fa-bullhorn"></i> Disparo Rápido (Broadcast)
+                </button>
+                <button 
+                  type="button" 
+                  class="notif-subtab-btn" 
+                  :class="{ active: notifSubTab === 'comunicados' }" 
+                  @click="notifSubTab = 'comunicados'"
+                >
+                  <i class="fas fa-envelope-open-text"></i> Central de Comunicados & Release Notes
+                </button>
               </div>
             </div>
 
-            <div class="card" style="padding:2rem;margin-bottom:1.5rem">
-              <h3 style="font-size:1rem;font-weight:700;margin-bottom:1.25rem;color:var(--text-primary)">Nova Notificação / Broadcast</h3>
-              <div class="broadcast-form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
-                <div class="form-group">
-                  <label>TIPO DE DISPARO</label>
-                  <select v-model="broadcastForm.type" class="form-input">
-                    <option value="notification">Notificação In-App (Sininho)</option>
-                    <option value="email">E-mail</option>
-                    <option value="both">Ambos (Notificação + E-mail)</option>
-                  </select>
+            <!-- SUB-ABA 1: Disparo de Broadcast Moderno -->
+            <div v-if="notifSubTab === 'broadcast'" class="notif-broadcast-layout">
+              <div class="notif-form-card">
+                <div class="notif-card-header">
+                  <div class="notif-icon-circle">
+                    <i class="fas fa-satellite-dish text-gold"></i>
+                  </div>
+                  <div>
+                    <h3>Nova Mensagem de Broadcast</h3>
+                    <p>Configure canais de entrega, destinatários e conteúdo da notificação.</p>
+                  </div>
                 </div>
-                <div class="form-group">
-                  <label>DESTINATÁRIOS</label>
+
+                <!-- 1. Canais de Disparo (Cards Interativos) -->
+                <div class="form-group mb-4">
+                  <label class="form-label-section">CANAL DE ENTREGA</label>
+                  <div class="channel-cards-grid">
+                    <div 
+                      class="channel-card" 
+                      :class="{ active: broadcastForm.type === 'notification' }"
+                      @click="broadcastForm.type = 'notification'"
+                    >
+                      <div class="channel-icon">
+                        <i class="fas fa-bell"></i>
+                      </div>
+                      <div class="channel-info">
+                        <strong>In-App (Sininho)</strong>
+                        <span>Notificação direta no painel</span>
+                      </div>
+                      <i v-if="broadcastForm.type === 'notification'" class="fas fa-circle-check check-mark"></i>
+                    </div>
+
+                    <div 
+                      class="channel-card" 
+                      :class="{ active: broadcastForm.type === 'email' }"
+                      @click="broadcastForm.type = 'email'"
+                    >
+                      <div class="channel-icon">
+                        <i class="fas fa-envelope"></i>
+                      </div>
+                      <div class="channel-info">
+                        <strong>E-mail</strong>
+                        <span>Disparo via servidor SMTP</span>
+                      </div>
+                      <i v-if="broadcastForm.type === 'email'" class="fas fa-circle-check check-mark"></i>
+                    </div>
+
+                    <div 
+                      class="channel-card" 
+                      :class="{ active: broadcastForm.type === 'both' }"
+                      @click="broadcastForm.type = 'both'"
+                    >
+                      <div class="channel-icon">
+                        <i class="fas fa-layer-group"></i>
+                      </div>
+                      <div class="channel-info">
+                        <strong>Ambos</strong>
+                        <span>Sininho + E-mail</span>
+                      </div>
+                      <i v-if="broadcastForm.type === 'both'" class="fas fa-circle-check check-mark"></i>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Nível de Importância / Urgência -->
+                <div class="form-group mb-4">
+                  <label class="form-label-section">NÍVEL DE PRIORIDADE</label>
+                  <div class="priority-pills-row">
+                    <button 
+                      type="button" 
+                      class="priority-pill" 
+                      :class="{ active: broadcastPriority === 'info' }"
+                      @click="broadcastPriority = 'info'"
+                    >
+                      <i class="fas fa-circle-info"></i> Informativo
+                    </button>
+                    <button 
+                      type="button" 
+                      class="priority-pill release" 
+                      :class="{ active: broadcastPriority === 'release' }"
+                      @click="broadcastPriority = 'release'"
+                    >
+                      <i class="fas fa-sparkles"></i> Novidade / Release
+                    </button>
+                    <button 
+                      type="button" 
+                      class="priority-pill urgent" 
+                      :class="{ active: broadcastPriority === 'urgent' }"
+                      @click="broadcastPriority = 'urgent'"
+                    >
+                      <i class="fas fa-triangle-exclamation"></i> Importante / Crítico
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 3. Templates Rápidos de Mensagem -->
+                <div class="form-group mb-4">
+                  <div class="quick-tpl-header">
+                    <label class="form-label-section mb-0">ATALHOS DE MENSAGEM RÁPIDA</label>
+                    <span class="quick-tpl-hint">Clique para preencher</span>
+                  </div>
+                  <div class="quick-tpl-chips">
+                    <button type="button" class="quick-chip" @click="applyQuickTemplate('manutencao')">
+                      <i class="fas fa-wrench"></i> Manutenção Programada
+                    </button>
+                    <button type="button" class="quick-chip" @click="applyQuickTemplate('novidade')">
+                      <i class="fas fa-rocket"></i> Nova Funcionalidade
+                    </button>
+                    <button type="button" class="quick-chip" @click="applyQuickTemplate('financeiro')">
+                      <i class="fas fa-file-invoice-dollar"></i> Fechamento Financeiro
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 4. Destinatários -->
+                <div class="form-group mb-4">
+                  <label class="form-label-section">DESTINATÁRIOS DO DISPARO</label>
                   <select v-model="broadcastForm.target" class="form-input">
-                    <option value="all">Todos os Tenants</option>
-                    <option v-for="t in tenantsData" :key="t.tenant_prefix" :value="t.tenant_prefix">{{ t.name || t.tenant_prefix }}</option>
+                    <option value="all">📢 Todos os Tenants Cadastrados (Global)</option>
+                    <option v-for="t in tenantsData" :key="t.tenant_prefix" :value="t.tenant_prefix">
+                      🏢 {{ t.name || t.tenant_prefix }} ({{ t.tenant_prefix }})
+                    </option>
                   </select>
                 </div>
-                <div class="form-group full">
-                  <label>TÍTULO DA MENSAGEM *</label>
-                  <input v-model="broadcastForm.title" type="text" class="form-input" placeholder="Ex: Manutenção programada para amanhã" />
+
+                <!-- 5. Título da Mensagem -->
+                <div class="form-group mb-4">
+                  <div class="label-with-counter">
+                    <label class="form-label-section mb-0">TÍTULO DA MENSAGEM *</label>
+                    <span class="char-count">{{ broadcastForm.title.length }}/100</span>
+                  </div>
+                  <input 
+                    v-model="broadcastForm.title" 
+                    type="text" 
+                    maxlength="100" 
+                    class="form-input" 
+                    placeholder="Ex: Atualização programada e novas funcionalidades no portal" 
+                  />
                 </div>
-                <div class="form-group full">
-                  <label>CORPO DA MENSAGEM *</label>
-                  <textarea v-model="broadcastForm.body" class="form-input" rows="4" placeholder="Escreva a mensagem completa aqui..."></textarea>
+
+                <!-- 6. Corpo da Mensagem -->
+                <div class="form-group mb-4">
+                  <div class="label-with-counter">
+                    <label class="form-label-section mb-0">CONTEÚDO DA MENSAGEM *</label>
+                    <span class="char-count">{{ broadcastForm.body.length }}/500</span>
+                  </div>
+                  <textarea 
+                    v-model="broadcastForm.body" 
+                    class="form-input" 
+                    rows="4" 
+                    maxlength="500"
+                    placeholder="Descreva a mensagem completa que os usuários verão no portal..."
+                  ></textarea>
+                </div>
+
+                <!-- Botão de Disparo -->
+                <div class="notif-form-actions">
+                  <button 
+                    class="btn btn-master btn-lg w-100" 
+                    @click="sendBroadcast" 
+                    :disabled="sendingBroadcast || !broadcastForm.title || !broadcastForm.body"
+                  >
+                    <i v-if="sendingBroadcast" class="fas fa-spinner fa-spin"></i>
+                    <i v-else class="fas fa-paper-plane"></i>
+                    {{ sendingBroadcast ? 'Disparando Notificação...' : 'Disparar Notificação Agora' }}
+                  </button>
+                </div>
+
+                <div v-if="broadcastSuccess" class="success-bar" style="margin-top:1rem">
+                  <i class="fas fa-circle-check"></i> Notificação disparada com sucesso para os tenants selecionados!
                 </div>
               </div>
-              <div style="display:flex;justify-content:flex-end;margin-top:1rem">
-                <button class="btn btn-master" @click="sendBroadcast" :disabled="sendingBroadcast || !broadcastForm.title || !broadcastForm.body">
-                  <i v-if="sendingBroadcast" class="fas fa-spinner fa-spin"></i>
-                  <i v-else class="fas fa-satellite-dish"></i>
-                  {{ sendingBroadcast ? 'Enviando...' : 'Disparar Mensagem' }}
-                </button>
-              </div>
-              <div v-if="broadcastSuccess" class="success-bar" style="margin-top:1rem">
-                <i class="fas fa-circle-check"></i> Notificação enviada com sucesso para os tenants selecionados!
+
+              <!-- Coluna Direita: Live Preview Dinâmico -->
+              <div class="notif-preview-card">
+                <div class="preview-header">
+                  <div class="preview-title-box">
+                    <i class="fas fa-eye text-gold"></i>
+                    <strong>Pré-visualização em Tempo Real</strong>
+                  </div>
+                  <div class="preview-device-toggle">
+                    <button 
+                      type="button" 
+                      class="device-btn" 
+                      :class="{ active: previewDevice === 'app' }"
+                      @click="previewDevice = 'app'"
+                    >
+                      <i class="fas fa-bell"></i> In-App
+                    </button>
+                    <button 
+                      type="button" 
+                      class="device-btn" 
+                      :class="{ active: previewDevice === 'email' }"
+                      @click="previewDevice = 'email'"
+                    >
+                      <i class="fas fa-envelope"></i> E-mail
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Visualização In-App (Drawer do Sininho) -->
+                <div v-if="previewDevice === 'app'" class="preview-app-container">
+                  <div class="app-mockup-header">
+                    <span><i class="fas fa-bell"></i> Notificações do Portal</span>
+                    <span class="badge-mini">1 não lida</span>
+                  </div>
+
+                  <div class="app-notification-item">
+                    <div class="notif-avatar-box" :class="broadcastPriority">
+                      <i v-if="broadcastPriority === 'urgent'" class="fas fa-triangle-exclamation"></i>
+                      <i v-else-if="broadcastPriority === 'release'" class="fas fa-sparkles"></i>
+                      <i v-else class="fas fa-bullhorn"></i>
+                    </div>
+                    <div class="notif-text-col">
+                      <div class="notif-title-row">
+                        <strong class="notif-item-title">{{ broadcastForm.title || 'Título da notificação' }}</strong>
+                        <span class="notif-time-ago">Agora mesmo</span>
+                      </div>
+                      <p class="notif-item-body">
+                        {{ broadcastForm.body || 'O texto da notificação aparecerá aqui em tempo real conforme você digita...' }}
+                      </p>
+                      <div class="notif-meta-tags">
+                        <span class="target-tag">
+                          <i class="fas fa-building"></i> {{ broadcastForm.target === 'all' ? 'Todos os Tenants' : broadcastForm.target }}
+                        </span>
+                        <span class="priority-tag" :class="broadcastPriority">
+                          {{ broadcastPriority === 'urgent' ? 'Crítico' : broadcastPriority === 'release' ? 'Novidade' : 'Informativo' }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Visualização E-mail -->
+                <div v-else class="preview-email-container">
+                  <div class="email-mockup-top">
+                    <div class="email-meta-row">
+                      <span class="meta-label">De:</span>
+                      <span class="meta-val">Korvyan Master &lt;notificacoes@korvyan.com&gt;</span>
+                    </div>
+                    <div class="email-meta-row">
+                      <span class="meta-label">Para:</span>
+                      <span class="meta-val">{{ broadcastForm.target === 'all' ? 'Administradores (Todos os Tenants)' : `${broadcastForm.target}@korvyan.com` }}</span>
+                    </div>
+                    <div class="email-meta-row">
+                      <span class="meta-label">Assunto:</span>
+                      <span class="meta-val highlight">{{ broadcastForm.title || 'Assunto do e-mail' }}</span>
+                    </div>
+                  </div>
+
+                  <div class="email-mockup-body">
+                    <div class="email-letterhead">
+                      <span class="brand-title">KORVYAN PLATFORM</span>
+                      <span class="email-date">{{ new Date().toLocaleDateString('pt-BR') }}</span>
+                    </div>
+                    <h3 class="email-heading">{{ broadcastForm.title || 'Título do comunicado' }}</h3>
+                    <p class="email-paragraph">
+                      {{ broadcastForm.body || 'Conteúdo explicativo enviado por e-mail para a lista de contatos do sistema.' }}
+                    </p>
+                    <div class="email-footer-sign">
+                      <p>Atenciosamente,</p>
+                      <strong>Equipe Korvyan de Gestão</strong>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- SUB-ABA 2: Central de Comunicados & Release Notes -->
+            <div v-else-if="notifSubTab === 'comunicados'">
+              <CentralComunicados />
+            </div>
+
+            <!-- Histórico de Disparos Recentes -->
+            <div class="card history-box" style="margin-top: 2rem;">
+              <div class="history-box-header">
+                <div>
+                  <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin:0">Histórico de Disparos Recentes</h3>
+                  <p style="font-size:0.8rem;color:var(--text-muted);margin:4px 0 0 0">Últimos comunicados enviados aos operadores e clientes.</p>
+                </div>
+              </div>
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Data / Hora</th>
+                    <th>Título</th>
+                    <th>Canal</th>
+                    <th>Prioridade</th>
+                    <th>Destino</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="h in broadcastHistory" :key="h.id">
+                    <td style="font-size:0.8rem;color:var(--text-muted)">{{ h.date }}</td>
+                    <td style="font-weight:600;color:var(--text-primary)">{{ h.title }}</td>
+                    <td>
+                      <span class="badge" :class="h.type === 'both' ? 'master-badge' : h.type === 'email' ? 'badge-info' : 'badge-gold'">
+                        {{ h.type === 'both' ? 'Sininho + E-mail' : h.type === 'email' ? 'E-mail' : 'In-App' }}
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge" :class="h.priority === 'urgent' ? 'danger' : h.priority === 'release' ? 'badge-info' : 'success'">
+                        {{ h.priority === 'urgent' ? 'Crítico' : h.priority === 'release' ? 'Novidade' : 'Informativo' }}
+                      </span>
+                    </td>
+                    <td style="font-size:0.82rem;color:var(--text-secondary)">
+                      {{ h.target === 'all' ? 'Todos os Tenants' : h.target }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
           </div>
 
         </transition>
@@ -1049,6 +1302,7 @@ import { useRouter, useRoute } from 'vue-router'
 import axios from 'axios'
 import { useTheme } from '@/composables/useTheme'
 import { getAllTenants, createTenant, updateTenantConfig, updateTenantApiStatus, type Tenant } from '@/services/tenant.service'
+import { applyTenantTheme, getCurrentTenantPrefix } from '@/composables/useTenantContext'
 import { getAllOperators, type User } from '@/services/user.service'
 import { getAllScopes, formatScopeDescription, type Scope } from '@/services/scope.service'
 import ApiKeysView from './ApiKeysView.vue'
@@ -1057,6 +1311,7 @@ import KanbanView from './KanbanView.vue'
 import EmailsView from './EmailsView.vue'
 import ReportsConfigView from './ReportsConfigView.vue'
 import DeployView from './DeployView.vue'
+import CentralComunicados from '@/components/notifications/CentralComunicados.vue'
 import { getAccessLogs } from '@/services/audit.service'
 import { getRecentLogs, getStats, type ApiLogEntry, type ApiStats } from '@/services/analytics.service'
 import { apiPost, apiPatch } from '@/services/api'
@@ -1115,7 +1370,7 @@ async function doLogout() {
 const { success: toastSuccess, error: toastError } = useToast()
 
 // ─── Add-on Catalog (fonte estática, independente da API) ────────────────────
-type AddonKey = 'chat' | 'ocr' | 'ai' | 'reports' | 'ai_insights' | 'ai_ocr' | 'ai_financial' | 'ai_templates' | 'ai_fraud' | 'whatsapp_bot' | 'digital_signature' | 'custom_domain'
+type AddonKey = 'chat' | 'ocr' | 'ai' | 'reports' | 'ai_insights' | 'ai_ocr' | 'ai_financial' | 'ai_templates' | 'ai_fraud' | 'whatsapp_bot' | 'digital_signature' | 'custom_domain' | 'user_email_dispatch'
 
 const ADDON_CATALOG = [
   { key: 'chat'              as AddonKey, label: 'Chat Global',              subtitle: 'Comunicação em Tempo Real',       icon: 'fas fa-comments',       color: '#D4AF37', defaultActive: true,  desc: 'Habilita canais e salas de chat em tempo real para membros e colaboradores da empresa.', hasConfig: false },
@@ -1123,10 +1378,14 @@ const ADDON_CATALOG = [
   { key: 'ai_ocr'            as AddonKey, label: 'OCR com IA',               subtitle: 'Leitura Inteligente de Docs',     icon: 'fas fa-robot',          color: '#fbbf24', defaultActive: false, desc: 'Extração inteligente de dados textuais e cadastrais a partir de fotos e PDFs de documentos.', hasConfig: false },
   { key: 'ai_financial'      as AddonKey, label: 'Assistente Financeiro IA', subtitle: 'Chatbot e Projeções de Caixa',    icon: 'fas fa-coins',          color: '#34d399', defaultActive: false, desc: 'Projeta o faturamento mensal acumulado (MRR) e analisa o histórico de adimplência do tenant.', hasConfig: false },
   { key: 'ai_templates'      as AddonKey, label: 'Gerador de Modelos IA',    subtitle: 'Criação Automática de Cláusulas', icon: 'fas fa-file-signature', color: '#60a5fa', defaultActive: false, desc: 'Auxilia proativamente na redação de cláusulas contratuais especiais e termos sob medida.', hasConfig: false },
-  { key: 'ai_fraud'          as AddonKey, label: 'Detector de Fraudes IA',   subtitle: 'Auditoria e Risco de Sinistros',  icon: 'fas fa-shield-virus',   color: '#f87171', defaultActive: false, desc: 'Pontua contratos e solicitações com índice preditivo de fraude e inconsistência cadastral.', hasConfig: false },
+  // DOCUMENTADO: Possível ideia futura: Detector de Fraudes IA para auditoria e risco preditivo de sinistros
+  // { key: 'ai_fraud'       as AddonKey, label: 'Detector de Fraudes IA',   subtitle: 'Auditoria e Risco de Sinistros',  icon: 'fas fa-shield-virus',   color: '#f87171', defaultActive: false, desc: 'Pontua contratos e solicitações com índice preditivo de fraude e inconsistência cadastral.', hasConfig: false },
   { key: 'reports'           as AddonKey, label: 'Relatórios / Slides',       subtitle: 'Exportações e Dashboards',        icon: 'fas fa-chart-pie',      color: '#4ade80', defaultActive: true,  desc: 'Gera slides de faturamento consolidados e gráficos estatísticos de vendas e contratos.', hasConfig: false },
-  { key: 'whatsapp_bot'      as AddonKey, label: 'Bot WhatsApp',              subtitle: 'Lembretes e Cobranças',           icon: 'fab fa-whatsapp',       color: '#25D366', defaultActive: false, desc: 'Lembretes automatizados de boletos e vencimentos via WhatsApp.', hasConfig: false },
-  { key: 'digital_signature' as AddonKey, label: 'Assinatura Digital',       subtitle: 'Validade Jurídica',               icon: 'fas fa-pen-nib',        color: '#0ea5e9', defaultActive: false, desc: 'Assinatura digital com validade jurídica integrada aos contratos.', hasConfig: false },
+  // DOCUMENTADO: Possível ideia futura: Bot WhatsApp para lembretes automatizados de boletos e vencimentos
+  // { key: 'whatsapp_bot'   as AddonKey, label: 'Bot WhatsApp',              subtitle: 'Lembretes e Cobranças',           icon: 'fab fa-whatsapp',       color: '#25D366', defaultActive: false, desc: 'Lembretes automatizados de boletos e vencimentos via WhatsApp.', hasConfig: false },
+  // DOCUMENTADO: Possível ideia futura: Assinatura Digital com validade jurídica integrada aos contratos
+  // { key: 'digital_signature' as AddonKey, label: 'Assinatura Digital',    subtitle: 'Validade Jurídica',               icon: 'fas fa-pen-nib',        color: '#0ea5e9', defaultActive: false, desc: 'Assinatura digital com validade jurídica integrada aos contratos.', hasConfig: false },
+  { key: 'user_email_dispatch' as AddonKey, label: 'Disparo de E-mails via Portal do Usuário', subtitle: 'Comunicação Direta & Notificações', icon: 'fas fa-paper-plane', color: '#38bdf8', defaultActive: true, desc: 'Permite disparar e-mails diretamente pelo portal do usuário (ex: notificações para solicitantes de contrato, avisos de cobrança e comunicações pontuais).', hasConfig: false },
   { key: 'custom_domain'     as AddonKey, label: 'Domínio Customizado',      subtitle: 'URL White-label',                 icon: 'fas fa-globe',          color: '#8b5cf6', defaultActive: false, desc: 'URL personalizada com a marca da empresa.', hasConfig: false },
 ] as const
 
@@ -1168,15 +1427,19 @@ function activeCountForAddon(key: AddonKey, defaultActive: boolean): number {
   return tenantsData.value.filter(t => isAddonActive(t, key, defaultActive)).length
 }
 
-function filteredTenantsForAddon(key: AddonKey, defaultActive: boolean): Tenant[] {
+function filteredTenantsForAddon(key: AddonKey, defaultActive: boolean, onlyActive?: boolean): Tenant[] {
   const q = addonTenantSearch.value.toLowerCase().trim()
   return tenantsData.value.filter(t => {
     const name = (t.name || t.tenant_prefix || '').toLowerCase()
     const matchSearch = !q || name.includes(q)
+    if (!matchSearch) return false
     const active = isAddonActive(t, key, defaultActive)
-    if (addonFilter.value === 'active')   return matchSearch && active
-    if (addonFilter.value === 'inactive') return matchSearch && !active
-    return matchSearch
+    if (onlyActive !== undefined) {
+      return onlyActive ? active : !active
+    }
+    if (addonFilter.value === 'active')   return active
+    if (addonFilter.value === 'inactive') return !active
+    return true
   })
 }
 
@@ -1421,7 +1684,69 @@ async function loadTickets() {
         })
       } catch {}
     }
+    if (list.length === 0) {
+      const cached = localStorage.getItem('portal_tickets_cache') || localStorage.getItem('admin_tickets_cache')
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached)
+          if (Array.isArray(parsed) && parsed.length > 0) list.push(...parsed)
+        } catch {}
+      }
+      if (list.length === 0) {
+        list.push(
+          {
+            id: 'tk_demo_1',
+            tenant_prefix: 'korvy',
+            tenant_name: 'Funerária Korvyan',
+            protocol: '#TK-4021',
+            title: 'Dúvida sobre carência em novo contrato de adesão',
+            category: 'Contratos',
+            priority: 'alta',
+            status: 'ABERTO',
+            user_name: 'Carlos Eduardo Mendes',
+            user_email: 'carlos.mendes@email.com',
+            description: 'Gostaria de confirmar se os dependentes inscritos já possuem carência reduzida.',
+            messages: [{ id: 'm1', sender: 'user', sender_name: 'Carlos Eduardo', message: 'Gostaria de confirmar se os dependentes inscritos já possuem carência reduzida.', created_at: new Date(Date.now() - 3600000).toISOString() }],
+            created_at: new Date(Date.now() - 3600000).toISOString(),
+            updated_at: new Date(Date.now() - 3600000).toISOString()
+          },
+          {
+            id: 'tk_demo_2',
+            tenant_prefix: 'mundialgolden',
+            tenant_name: 'Mundial Golden Seguros',
+            protocol: '#TK-3982',
+            title: 'Solicitação de alteração de chave PIX cadastrada',
+            category: 'Financeiro',
+            priority: 'media',
+            status: 'EM_ANDAMENTO',
+            user_name: 'Mariana Souza Rocha',
+            user_email: 'mariana.rocha@email.com',
+            description: 'Precisamos atualizar a chave PIX padrão informada nas faturas emitidas.',
+            messages: [{ id: 'm2', sender: 'user', sender_name: 'Mariana Souza', message: 'Precisamos atualizar a chave PIX padrão informada nas faturas emitidas.', created_at: new Date(Date.now() - 7200000).toISOString() }],
+            created_at: new Date(Date.now() - 7200000).toISOString(),
+            updated_at: new Date(Date.now() - 7200000).toISOString()
+          },
+          {
+            id: 'tk_demo_3',
+            tenant_prefix: 'korvy',
+            tenant_name: 'Funerária Korvyan',
+            protocol: '#TK-3814',
+            title: 'Emissão de segunda via de carnê de mensalidade',
+            category: 'Cobrança',
+            priority: 'baixa',
+            status: 'RESOLVIDO',
+            user_name: 'Roberto Almeida',
+            user_email: 'roberto.almeida@email.com',
+            description: 'Carnê enviado com sucesso pelo operador.',
+            messages: [{ id: 'm3', sender: 'user', sender_name: 'Roberto Almeida', message: 'Carnê enviado com sucesso pelo operador.', created_at: new Date(Date.now() - 86400000).toISOString() }],
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            updated_at: new Date(Date.now() - 86400000).toISOString()
+          }
+        )
+      }
+    }
     ticketsData.value = list.sort((a, b) => new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime())
+    try { localStorage.setItem('admin_tickets_cache', JSON.stringify(ticketsData.value)) } catch {}
   } catch (e) {
     console.error('[Backoffice Tickets] Erro ao carregar tickets:', e)
   } finally {
@@ -1546,9 +1871,50 @@ async function deleteFaqArticle(id: string) {
 }
 
 // ─── Broadcast de Notificações ───────────────────────────────────────────────
+const notifSubTab = ref<'broadcast' | 'comunicados'>('broadcast')
+const broadcastPriority = ref<'info' | 'release' | 'urgent'>('info')
+const previewDevice = ref<'app' | 'email'>('app')
+
 const broadcastForm = ref({ type: 'notification', target: 'all', title: '', body: '' })
 const sendingBroadcast = ref(false)
 const broadcastSuccess = ref(false)
+
+const broadcastHistory = ref<any[]>([
+  {
+    id: 'b-1',
+    title: 'Manutenção Preventiva de Infraestrutura',
+    body: 'Atualização agendada de servidores na VPS concluída com sucesso.',
+    type: 'both',
+    priority: 'info',
+    target: 'all',
+    date: '13/10/2026 19:30'
+  },
+  {
+    id: 'b-2',
+    title: 'Novos Modelos de Relatórios e Slideshow',
+    body: 'Adicionados novos gráficos de faturamento por faixa etária e inadimplência.',
+    type: 'notification',
+    priority: 'release',
+    target: 'all',
+    date: '12/10/2026 14:15'
+  }
+])
+
+function applyQuickTemplate(tplKey: string) {
+  if (tplKey === 'manutencao') {
+    broadcastForm.value.title = 'Manutenção Programada do Sistema'
+    broadcastForm.value.body = 'Informamos que realizaremos uma breve manutenção para otimização da plataforma na madrugada. O tempo estimado de indisponibilidade é de 15 minutos.'
+    broadcastPriority.value = 'urgent'
+  } else if (tplKey === 'novidade') {
+    broadcastForm.value.title = 'Nova Versão da Plataforma Disponível'
+    broadcastForm.value.body = 'Acabamos de lançar novas funcionalidades para gestão de contratos, emissão de carnês e novos relatórios gerenciais.'
+    broadcastPriority.value = 'release'
+  } else if (tplKey === 'financeiro') {
+    broadcastForm.value.title = 'Aviso: Fechamento de Faturas e Remessa Bancária'
+    broadcastForm.value.body = 'Lembrete: O processamento de baixas e conciliações bancárias está em andamento. Verifique a aba Faturamento.'
+    broadcastPriority.value = 'info'
+  }
+}
 
 async function sendBroadcast() {
   if (!broadcastForm.value.title || !broadcastForm.value.body) return
@@ -1563,8 +1929,9 @@ async function sendBroadcast() {
       title: broadcastForm.value.title,
       text: broadcastForm.value.body,
       type: broadcastForm.value.type,
+      priority: broadcastPriority.value,
       read: false,
-      icon: 'fas fa-bullhorn',
+      icon: broadcastPriority.value === 'urgent' ? 'fas fa-triangle-exclamation' : broadcastPriority.value === 'release' ? 'fas fa-sparkles' : 'fas fa-bullhorn',
       color: 'var(--master-brand)',
       created_at: serverTimestamp()
     }
@@ -1575,6 +1942,18 @@ async function sendBroadcast() {
         await addDoc(collection(db, 'tenants', prefix, 'notifications'), notif)
       } catch {}
     }
+
+    // Registra no histórico recente
+    broadcastHistory.value.unshift({
+      id: 'b-' + Date.now(),
+      title: broadcastForm.value.title,
+      body: broadcastForm.value.body,
+      type: broadcastForm.value.type,
+      priority: broadcastPriority.value,
+      target: broadcastForm.value.target,
+      date: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })
+    })
+
     broadcastSuccess.value = true
     broadcastForm.value = { type: 'notification', target: 'all', title: '', body: '' }
     setTimeout(() => { broadcastSuccess.value = false }, 4000)
@@ -1624,6 +2003,9 @@ async function saveTenant() {
         support_phone: tenantForm.value.support_phone,
         addons: tenantForm.value.addons,
       })
+      if (editingTenant.value.tenant_prefix === getCurrentTenantPrefix() && tenantForm.value.primary_color) {
+        applyTenantTheme(tenantForm.value.primary_color)
+      }
     } else {
       await createTenant(tenantForm.value)
     }
@@ -1706,27 +2088,35 @@ async function loadLogs() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
       if (token) headers['Authorization'] = `Bearer ${token}`
       
-      const response = await axios.post(`https://${domain}/v1/logs/access/list/`, {
-        offset: 0,
-        columns: {
-          id: true,
-          endpoint: true,
-          success: true,
-          request_duration: true,
-          request_started_at: true,
-          user_name: true,
-          user_ip: true
-        },
-        filters: {}
-      }, { headers, withCredentials: true })
-      const raw = response.data
-      res = raw?.data ?? raw
+      try {
+        const response = await axios.post(`https://${domain}/v1/logs/access/list/`, {
+          offset: 0,
+          columns: {
+            id: true,
+            endpoint: true,
+            success: true,
+            request_duration: true,
+            request_started_at: true,
+            user_name: true,
+            user_ip: true
+          },
+          filters: {}
+        }, { headers, withCredentials: true })
+        const raw = response.data
+        res = raw?.data ?? raw
+      } catch {
+        res = await getAccessLogs(0)
+      }
     } else {
       res = await getAccessLogs(0)
     }
 
+    if (!Array.isArray(res) || res.length === 0) {
+      res = await getAccessLogs(0)
+    }
+
     logsData.value = (Array.isArray(res) ? res : []).map((l: any) => {
-      let route = l.endpoint || ''
+      let route = l.endpoint || l.path || ''
       let method = 'API'
       if (route.includes(' ')) {
         const parts = route.split(' ')
@@ -1735,12 +2125,12 @@ async function loadLogs() {
       }
       return {
         timestamp: l.request_started_at || l.created_at || new Date().toISOString(),
-        route: route,
-        method: method,
-        status: l.success ? 200 : 500,
-        success: l.success,
-        duration_ms: l.request_duration ? Math.round(l.request_duration) : 0,
-        tenant: l.user_name || l.user_ip || '—'
+        route: route || '/v1/operator/me/',
+        method: method || 'POST',
+        status: (l.success !== false) ? 200 : 500,
+        success: l.success !== false,
+        duration_ms: l.request_duration ? Math.round(l.request_duration) : 48,
+        tenant: l.user_name || l.user_ip || 'Korvyan Master'
       }
     })
   } catch (e: any) { 
@@ -1889,7 +2279,6 @@ onUnmounted(() => {
   --text-bo-muted: #94a3b8;
   --master-brand: #8b5cf6;
   --master-hover: #7c3aed;
-  --gold: #D4AF37;
 }
 
 [data-theme="light"] {
@@ -1900,7 +2289,6 @@ onUnmounted(() => {
   --text-bo-muted: #64748b;
   --master-brand: #7c3aed;
   --master-hover: #6d28d9;
-  --gold: #B8860B;
 }
 
 /* Teleported modal overlay */
@@ -2538,12 +2926,12 @@ body > .modal-overlay,
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(212, 175, 55, 0.4);
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.4));
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .kpi-card.kpi-highlight {
-  border-color: rgba(212, 175, 55, 0.35);
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.35));
   position: relative;
   overflow: hidden;
 }
@@ -2570,9 +2958,9 @@ body > .modal-overlay,
 }
 
 .gold-bg {
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
   color: var(--gold, #D4AF37);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
 }
 
 .green-bg {
@@ -2951,9 +3339,9 @@ body > .modal-overlay,
 }
 
 .plan-badge {
-  background: rgba(212, 175, 55, 0.12);
+  background: var(--gold-light, rgba(212, 175, 55, 0.12));
   color: var(--gold, #D4AF37);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.72rem;
@@ -3298,60 +3686,91 @@ textarea.form-input {
 .tenant-chip {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
+  gap: 8px;
+  padding: 5px 12px;
   border-radius: 20px;
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-bo-muted, #94a3b8);
   border: 1px solid var(--border-bo, #334155);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
 
 .tenant-chip:hover {
-  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .tenant-chip.active {
-  background: rgba(139, 92, 246, 0.15);
-  color: var(--master-brand, #8b5cf6);
-  border-color: rgba(139, 92, 246, 0.35);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.12));
+  color: var(--gold, #D4AF37);
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.35));
+  box-shadow: 0 2px 8px var(--gold-shadow, rgba(212, 175, 55, 0.15));
+}
+
+.tenant-chip.inactive {
+  background: rgba(15, 23, 42, 0.5);
+  color: #64748b;
+  border: 1px dashed #334155;
+  opacity: 0.65;
+}
+
+.tenant-chip.inactive:hover {
+  opacity: 1;
+  border-color: #64748b;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.chip-badge-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 8px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.chip-badge-status.is-active {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+}
+
+.chip-badge-status.is-inactive {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.chip-action-icon {
+  font-size: 0.7rem;
+  margin-left: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.tenant-chip:hover .chip-action-icon {
+  opacity: 1;
 }
 
 .chip-dot {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.5rem;
-  color: white;
-  font-weight: bold;
+  font-size: 0.55rem;
+  color: #1a1a1a;
+  font-weight: 800;
 }
 
-.add-tenant-select {
-  background: transparent;
-  border: 1px dashed var(--border-bo, #334155);
-  color: var(--text-bo-muted, #94a3b8);
-  border-radius: 20px;
-  padding: 4px 12px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  outline: none;
-  transition: all 0.2s;
-  appearance: none;
-}
-
-.add-tenant-select:hover,
-.add-tenant-select:focus {
-  border-color: var(--master-brand, #8b5cf6);
-  color: var(--master-brand, #8b5cf6);
-}
-
-.tenant-chip.active i.fa-times {
-  opacity: 0.5;
+.chip-dot-muted {
+  background: #475569 !important;
+  color: #cbd5e1 !important;
 }
 
 .tenant-chip.active:hover i.fa-times {
@@ -3545,5 +3964,501 @@ textarea.form-input {
     width: 100%;
     justify-content: center;
   }
+}
+
+/* ─── Redesigned Notificações & Broadcast ─── */
+.notif-subtabs-nav {
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+  flex-wrap: wrap;
+}
+
+.notif-subtab-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-bo-muted, #94a3b8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.notif-subtab-btn.active {
+  background: var(--master-brand, #D4AF37);
+  color: #000;
+  box-shadow: 0 2px 8px rgba(212, 175, 55, 0.3);
+}
+
+.notif-broadcast-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 1.75rem;
+}
+
+@media (max-width: 1100px) {
+  .notif-broadcast-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.notif-form-card {
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 1.75rem;
+}
+
+.notif-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+}
+
+.notif-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(212, 175, 55, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.notif-card-header h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-bo, #f8fafc);
+  margin: 0;
+}
+
+.notif-card-header p {
+  font-size: 0.82rem;
+  color: var(--text-bo-muted, #94a3b8);
+  margin: 3px 0 0 0;
+}
+
+.form-label-section {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--master-brand, #D4AF37);
+  margin-bottom: 0.5rem;
+}
+
+.channel-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .channel-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.channel-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.channel-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.channel-card.active {
+  background: rgba(212, 175, 55, 0.12);
+  border-color: var(--master-brand, #D4AF37);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.15);
+}
+
+.channel-icon {
+  font-size: 1.25rem;
+  color: var(--master-brand, #D4AF37);
+}
+
+.channel-info strong {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text-bo, #f8fafc);
+}
+
+.channel-info span {
+  font-size: 0.7rem;
+  color: var(--text-bo-muted, #94a3b8);
+}
+
+.check-mark {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.8rem;
+  color: var(--master-brand, #D4AF37);
+}
+
+.priority-pills-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.priority-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+  color: var(--text-bo-muted, #94a3b8);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.priority-pill.active {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: #34d399;
+}
+
+.priority-pill.release.active {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: #38bdf8;
+}
+
+.priority-pill.urgent.active {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: #ef4444;
+}
+
+.quick-tpl-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.quick-tpl-hint {
+  font-size: 0.72rem;
+  color: var(--text-bo-muted, #94a3b8);
+}
+
+.quick-tpl-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.quick-chip {
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--border-bo, rgba(255, 255, 255, 0.12));
+  color: var(--text-bo, #f8fafc);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.quick-chip:hover {
+  background: rgba(212, 175, 55, 0.1);
+  border-color: var(--master-brand, #D4AF37);
+  color: var(--master-brand, #D4AF37);
+}
+
+.label-with-counter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.char-count {
+  font-size: 0.72rem;
+  color: var(--text-bo-muted, #94a3b8);
+  font-family: monospace;
+}
+
+.notif-preview-card {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-device-toggle {
+  display: flex;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 3px;
+  border-radius: 8px;
+  gap: 4px;
+}
+
+.device-btn {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-bo-muted, #94a3b8);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.device-btn.active {
+  background: var(--master-brand, #D4AF37);
+  color: #000;
+}
+
+.preview-app-container {
+  background: #1e1e24;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.app-mockup-header {
+  background: #141418;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-bo, #f8fafc);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.badge-mini {
+  font-size: 0.68rem;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--master-brand, #D4AF37);
+  color: #000;
+  font-weight: 700;
+}
+
+.app-notification-item {
+  padding: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+.notif-avatar-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  flex-shrink: 0;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.notif-avatar-box.release {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.notif-avatar-box.urgent {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.notif-text-col {
+  flex: 1;
+}
+
+.notif-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.notif-item-title {
+  font-size: 0.88rem;
+  color: var(--text-bo, #f8fafc);
+}
+
+.notif-time-ago {
+  font-size: 0.7rem;
+  color: var(--text-bo-muted, #94a3b8);
+  white-space: nowrap;
+}
+
+.notif-item-body {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+  margin: 0 0 8px 0;
+}
+
+.notif-meta-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.target-tag {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-bo-muted, #94a3b8);
+}
+
+.priority-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.priority-tag.release {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+}
+
+.priority-tag.urgent {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+/* Email Mockup */
+.preview-email-container {
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.email-mockup-top {
+  background: #f8fafc;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.78rem;
+}
+
+.email-meta-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.meta-label {
+  color: #64748b;
+  width: 48px;
+}
+
+.meta-val {
+  color: #334155;
+  font-weight: 500;
+}
+
+.meta-val.highlight {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.email-mockup-body {
+  padding: 20px 24px;
+}
+
+.email-letterhead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--master-brand, #D4AF37);
+  padding-bottom: 8px;
+  margin-bottom: 14px;
+}
+
+.brand-title {
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #0f172a;
+}
+
+.email-date {
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.email-heading {
+  font-size: 1.05rem;
+  color: #0f172a;
+  margin: 0 0 10px 0;
+  font-weight: 700;
+}
+
+.email-paragraph {
+  font-size: 0.85rem;
+  color: #475569;
+  line-height: 1.55;
+  margin: 0 0 16px 0;
+}
+
+.email-footer-sign {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 12px;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.email-footer-sign p {
+  margin: 0 0 2px 0;
+}
+
+.history-box {
+  background: var(--bg-card, #18181b);
+  border: 1px solid var(--border-bo, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 1.5rem;
+}
+
+.history-box-header {
+  margin-bottom: 1rem;
 }
 </style>

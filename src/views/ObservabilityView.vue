@@ -481,7 +481,7 @@ watch(selectedDays, loadStats)
 .stat-icon.yellow { background: rgba(245,158,11,0.15); color: #f59e0b; }
 .stat-icon.green { background: rgba(34,197,94,0.15); color: #22c55e; }
 .stat-icon.purple { background: rgba(167,139,250,0.15); color: #a78bfa; }
-.stat-icon.gold { background: rgba(212,175,55,0.15); color: var(--gold); }
+.stat-icon.gold { background: var(--gold-light, rgba(212,175,55,0.15)); color: var(--gold); }
 
 .stat-info { display: flex; flex-direction: column; }
 .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
@@ -515,7 +515,7 @@ watch(selectedDays, loadStats)
 .legend-item.success { color: #22c55e; }
 .legend-item.error { color: #ef4444; }
 
-.chart-badge { background: rgba(212,175,55,0.1); color: var(--gold); border-radius: 20px; padding: 2px 10px; font-size: 0.72rem; font-weight: 600; }
+.chart-badge { background: var(--gold-dim, rgba(212,175,55,0.1)); color: var(--gold); border-radius: 20px; padding: 2px 10px; font-size: 0.72rem; font-weight: 600; }
 
 .chart-wrapper { padding: 1rem; height: 220px; position: relative; }
 .doughnut-wrapper { height: 180px; }

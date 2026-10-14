@@ -1234,12 +1234,12 @@ onMounted(() => {
 
 .kpi-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(212, 175, 55, 0.4);
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.4));
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .kpi-card.kpi-highlight {
-  border-color: rgba(212, 175, 55, 0.35);
+  border-color: var(--gold-border, rgba(212, 175, 55, 0.35));
   position: relative;
   overflow: hidden;
 }
@@ -1266,9 +1266,9 @@ onMounted(() => {
 }
 
 .gold-bg {
-  background: rgba(212, 175, 55, 0.15);
+  background: var(--gold-light, rgba(212, 175, 55, 0.15));
   color: var(--gold, #D4AF37);
-  border: 1px solid rgba(212, 175, 55, 0.3);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.3));
 }
 
 .green-bg {
@@ -1723,9 +1723,9 @@ onMounted(() => {
 }
 
 .quick-edit-btn {
-  background: rgba(212, 175, 55, 0.1);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.1));
   color: var(--gold, #D4AF37);
-  border: 1px solid rgba(212, 175, 55, 0.25);
+  border: 1px solid var(--gold-border, rgba(212, 175, 55, 0.25));
   padding: 4px 8px;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -1738,7 +1738,7 @@ onMounted(() => {
 }
 
 .quick-edit-btn:hover {
-  background: rgba(212, 175, 55, 0.22);
+  background: var(--gold-light, rgba(212, 175, 55, 0.22));
   border-color: var(--gold, #D4AF37);
   transform: translateY(-1px);
 }
@@ -2193,7 +2193,7 @@ onMounted(() => {
 }
 
 .period-card.active {
-  background: rgba(212, 175, 55, 0.1);
+  background: var(--gold-dim, rgba(212, 175, 55, 0.1));
   border-color: var(--gold, #D4AF37);
   box-shadow: 0 0 0 1px var(--gold, #D4AF37);
 }
